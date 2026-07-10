@@ -10218,505 +10218,137 @@ function findPendingSolicitations(graph) {
 // Each entry can bring concepts, contexts, patterns, and implications.
 // Single-pattern entries have one pattern; bundles have several plus deps.
 // ===========================================================================
-const PATTERN_LIBRARY = [
-  // ----- Bundles -----
-  {
-    id: "bundle-attributes",
-    name: "Attributes",
-    category: "Bundles",
-    description: "Attributes & Modifiers vocabulary. An Attribute is a property a concept can have. A Value holds the Attribute's current setting and points back to its Attribute via OF. Value IS-A Temporaneous, so a Value's content evolves over time — every Value HAS State AT Tick chains let you track how an attribute's setting changes moment-to-moment. State UPDATES Value expresses causation: applying this State to that Value produces the Value's next State. A Modifier in the old sense (an explicit '+5 healing' or '-3 poison') is now just a State — same vocabulary, no separate concept. Typical use: HitPoints is an Attribute; HPCurrent is a Value OF HitPoints; HPCurrent HAS HP75 AT Tick3; Poison5 (a State) UPDATES HPCurrent (which together produce HP70 at Tick4).",
-    dependsOn: ["bundle-temporal"],
-    concepts: [
-      { name: "Attribute" },
-      // Value IS-A Temporaneous — its content changes over time. Combined with
-      // the HAS State AT Tick chain from bundle-temporal, a Value can be
-      // snapshotted at each tick, letting you express things like "HPCurrent
-      // had State (75) at Tick3, State (70) at Tick4" without manual UPDATE chains.
-      { name: "Value", types: ["Temporaneous"] },
-    ],
-    contexts: [
-      // OF: a Value belongs to a particular Attribute. Uses the engine's OF (now
-      // relaxed to Concept→Concept) — the bundle's signature declaration here
-      // is a no-op since OF already exists at the engine layer, but the entry
-      // documents the intent and shows up in autocompletion for relate-paint.
-      { name: "OF",      subject_type: "Value", target_type: "Attribute" },
-      // UPDATES: applying this State to a Value produces its next State. The
-      // old "Modifier" concept collapsed into State — every causal nudge to a
-      // value is just a State that gets applied, whether absolute ("HP becomes
-      // 70") or relative ("apply -5 poison"). New context concept introduced
-      // by this bundle.
-      { name: "UPDATES", subject_type: "State", target_type: "Value" },
-    ],
-  },
-  {
-    id: "bundle-spatial",
-    name: "Spatial",
-    category: "Bundles",
-    description: "Spatial vocabulary for tracking where things are. A Positionable is anything whose location can be tracked. It HAS a Position (a value-snapshot of where it is). The Position resolves to a Location AT some place. Both Position and Location IS-A Attribute, so they share the attribute value-space and can participate in OF / UPDATES chains for tracking changes over time. This bundle is the home of all locative concepts — bundle-cards depends on it for Position and Location.",
-    dependsOn: ["bundle-attributes", "bundle-temporal"],
-    concepts: [
-      { name: "Positionable" },
-      // Canonical home of Position. IS-A Attribute so positions can participate
-      // in OF / UPDATES chains (modifiers can update positions just like any
-      // other attribute value).
-      { name: "Position", types: ["Attribute"] },
-      // Location IS-A Attribute — the kind of attribute that names where
-      // something is. Locations are typically referenced by Position AT Location.
-      { name: "Location", types: ["Attribute"] },
-    ],
-    contexts: [
-      // HAS reuses the engine's HAS (Concept→Concept). Documentary entry for
-      // Positionable → Position — a thing carries its current position.
-      { name: "HAS", subject_type: "Positionable", target_type: "Position" },
-      // AT reuses bundle-temporal's AT (Concept→Concept). Documentary for
-      // Position → Location — a position resolves to a named place.
-      { name: "AT",  subject_type: "Position",     target_type: "Location" },
-    ],
-  },
-  {
-    id: "bundle-cards",
-    name: "Cards",
-    category: "Bundles",
-    description: "Card-game vocabulary. A Card has one or more Prints (physical or digital instances of the same card). Each Print IS-A Positionable (from bundle-spatial), so the relationship between a Print and its Position is expressed by the Positionable HAS Position chain — no separate OF (Position → Print) needed. A Position additionally lives IN a Zone (hand, deck, table, exile, …) AT an Index (which slot). Common triple shapes: Print OF Card · Print HAS Position · Position IN Zone · Position AT Index · Index OF Zone. Depends on bundle-spatial (for Position, Location, Positionable) — which itself pulls in bundle-attributes and bundle-temporal.",
-    dependsOn: ["bundle-spatial"],
-    concepts: [
-      { name: "Card" },
-      // Print is both Positionable (it lives somewhere — has a Position from
-      // bundle-spatial) and Temporaneous (its state evolves over time — has
-      // State AT Tick from bundle-temporal). The multi-typing lets the same
-      // Print concept participate in either machinery: spatial moves use the
-      // Positionable HAS Position chain; tapped/untapped or damage-counter
-      // tracking uses the Temporaneous HAS State AT Tick chain.
-      { name: "Print", types: ["Positionable", "Temporaneous"] },
-      { name: "Zone" },
-      { name: "Index" },
-    ],
-    contexts: [
-      // IN: a Position lives inside a Zone (hand, deck, battlefield, exile, …).
-      // New context concept introduced by this bundle.
-      { name: "IN", subject_type: "Position", target_type: "Zone" },
-      // OF reuses the engine's relaxed OF (Concept→Concept). Print → Card
-      // expresses ownership of a printed instance by its abstract card.
-      { name: "OF", subject_type: "Print",     target_type: "Card" },
-      // AT reuses bundle-temporal's AT (Concept→Concept). Documentary; the
-      // underlying AT concept already exists via the spatial → temporal chain.
-      { name: "AT", subject_type: "Position",  target_type: "Index" },
-    ],
-  },
-  {
-    id: "bundle-playspace",
-    name: "Playspace",
-    category: "Bundles",
-    description: "Top-level play area. A Playspace belongs to an Agent (Playspace OF Agent) — typically one Playspace per player. The Playspace owns a collection of Zones via OF (Zone OF Playspace). The four canonical Zone subtypes are Hand (cards in possession), Deck (draw pile), DiscardPile (used cards face up), and BanishPile (removed-from-game cards). Each Card carries its current Zone via HAS (Card HAS Zone), so the Zone a card occupies is a first-class fact you can query without walking through Print/Position. Depends on bundle-cards (for Card and Zone) and bundle-agency (for Agent).",
-    dependsOn: ["bundle-cards", "bundle-agency"],
-    concepts: [
-      { name: "Playspace" },
-      // The four canonical Zone subtypes. All IS-A Zone so any code that
-      // matches "Position IN Zone" (from bundle-cards) automatically covers
-      // these too — no need to enumerate the subtypes in patterns.
-      { name: "Hand",         types: ["Zone"] },
-      { name: "Deck",         types: ["Zone"] },
-      { name: "DiscardPile",  types: ["Zone"] },
-      { name: "BanishPile",   types: ["Zone"] },
-    ],
-    contexts: [
-      // OF reuses the engine's relaxed OF (Concept→Concept). Documentary entry
-      // declaring Zone → Playspace; doesn't add a new context concept.
-      { name: "OF",  subject_type: "Zone",      target_type: "Playspace" },
-      // OF declared again with the Playspace → Agent signature — the same OF
-      // context, just another typed use. Both entries serve as documentation
-      // and relate-paint autocomplete hints; the underlying concept is shared.
-      { name: "OF",  subject_type: "Playspace", target_type: "Agent" },
-      // HAS reuses the engine's HAS (already Concept→Concept). Documentary
-      // entry declaring Card → Zone; cards directly track their current zone
-      // for fast lookup without traversing Print/Position.
-      { name: "HAS", subject_type: "Card",      target_type: "Zone" },
-    ],
-  },
-  {
-    id: "bundle-temporal",
-    name: "Temporal",
-    category: "Bundles",
-    description: "Time vocabulary. Tick is a unit of discrete time. THEN orders one concept after another. AT is a general locative — historically temporal (X AT Tick), now relaxed to Concept→Concept so other vocabularies can reuse it (e.g. Position AT Index from bundle-cards). Temporaneous marks anything whose State evolves over time; the Temporaneous HAS a State, and the State AT a Tick. Build chains of States across Ticks to model how something changes moment-to-moment.",
-    concepts: [
-      { name: "Tick" },
-      // Temporaneous: anything whose state changes over time. The thing itself
-      // is the persistent identity; its State is the snapshot at a given moment.
-      { name: "Temporaneous" },
-      // State: a value-snapshot of a Temporaneous, located in time at some Tick.
-      { name: "State" },
-    ],
-    contexts: [
-      { name: "THEN", subject_type: "Concept",      target_type: "Concept" },
-      { name: "AT",   subject_type: "Concept",      target_type: "Concept" },
-      // HAS reuses the engine's HAS (Concept→Concept). Documentary entry for
-      // the Temporaneous → State use — a thing holds onto its current state.
-      { name: "HAS",  subject_type: "Temporaneous", target_type: "State"   },
-      // AT declared again with State → Tick — the same general AT, just
-      // documenting the canonical temporal use ("this state exists at this tick").
-      { name: "AT",   subject_type: "State",        target_type: "Tick"    },
-    ],
-  },
-  {
-    id: "bundle-agency",
-    name: "Agency",
-    category: "Bundles",
-    description: "Agency vocabulary. An Agent makes Choices. MAKES connects an Agent to the Choice it makes. Choice itself (and its OF / CHOSE option machinery) comes from bundle-input, so an Agent's Choice is interactive — an unresolved Choice an Agent MAKES will solicit that agent for a decision. Useful any time you need entities that select among alternatives.",
-    dependsOn: ["bundle-input"],
-    concepts: [
-      { name: "Agent" },
-    ],
-    contexts: [
-      { name: "MAKES", subject_type: "Agent", target_type: "Choice" },
-    ],
-  },
-  {
-    id: "bundle-loop",
-    name: "Loop",
-    category: "Bundles",
-    description: "Control-flow loop primitive. LoopTick IS Tick (from the Temporal bundle), so loop ticks participate in THEN/AT timing along with any other ticked entity. LoopTicks connect via THEN to form a sequence; each tick lives WITHIN a Loop. LoopEnter and LoopExit are LoopTick subtypes marking entry and exit.",
-    dependsOn: ["bundle-temporal"],
-    concepts: [
-      { name: "Loop" },
-      { name: "LoopTick", types: ["Tick"] },
-      { name: "LoopEnter", types: ["LoopTick"] },
-      { name: "LoopExit",  types: ["LoopTick"] },
-    ],
-    contexts: [
-      // THEN comes from the Temporal bundle (Concept → Concept signature, works for any Tick).
-      // WITHIN is loop-specific; subject is Tick so any tick-based entity can belong to a Loop.
-      { name: "WITHIN", subject_type: "Tick", target_type: "Loop" },
-    ],
-    patterns: [
-      {
-        // Canonical 3-tick loop: enter → tick → exit, all WITHIN the same loop, chained via THEN.
-        // Stamp once to instantiate one of each + their connections.
-        name: "SimpleLoop",
-        body: [
-          ["enter:LoopEnter", "WITHIN", "loop:Loop"],
-          ["tick:LoopTick",   "WITHIN", "loop:Loop"],
-          ["exit:LoopExit",   "WITHIN", "loop:Loop"],
-          ["enter:LoopEnter", "THEN",   "tick:LoopTick"],
-          ["tick:LoopTick",   "THEN",   "exit:LoopExit"],
-        ],
-        aliases: [
-          { name: "loop",  type: "Loop" },
-          { name: "enter", type: "LoopEnter" },
-          { name: "tick",  type: "LoopTick" },
-          { name: "exit",  type: "LoopExit" },
-        ],
-      },
-      {
-        // Pair of consecutive LoopTicks in the same Loop. Useful as a propagation premise
-        // or for filtering "show me every chained pair".
-        name: "LoopChain",
-        body: [
-          ["a:LoopTick", "THEN",   "b:LoopTick"],
-          ["a:LoopTick", "WITHIN", "loop:Loop"],
-          ["b:LoopTick", "WITHIN", "loop:Loop"],
-        ],
-        aliases: [
-          { name: "loop", type: "Loop" },
-          { name: "a",    type: "LoopTick" },
-          { name: "b",    type: "LoopTick" },
-        ],
-      },
-      {
-        // Premise: two Loops sequenced by THEN, each with its own exit/enter step.
-        // Used by the LoopsSequenced_LinkExitEnter implication to propagate the
-        // outer THEN-link into the inner exit→enter THEN-link.
-        name: "LoopsSequenced",
-        body: [
-          ["a:Loop",         "THEN",   "b:Loop"],
-          ["exit:LoopExit",  "WITHIN", "a:Loop"],
-          ["enter:LoopEnter","WITHIN", "b:Loop"],
-        ],
-        aliases: [
-          { name: "a",     type: "Loop" },
-          { name: "b",     type: "Loop" },
-          { name: "exit",  type: "LoopExit" },
-          { name: "enter", type: "LoopEnter" },
-        ],
-      },
-      {
-        // Consequence: when two Loops are THEN-sequenced, their exit and enter
-        // steps are also THEN-sequenced. This is the natural control-flow
-        // continuation — finishing Loop a flows into starting Loop b.
-        name: "LoopsSequencedExitEnter",
-        body: [
-          ["exit:LoopExit", "THEN", "enter:LoopEnter"],
-        ],
-        aliases: [
-          { name: "exit",  type: "LoopExit" },
-          { name: "enter", type: "LoopEnter" },
-        ],
-      },
-    ],
-    implications: [
-      // Whenever two Loops are connected by a top-level THEN and each owns its
-      // canonical exit/enter, link the exit of the first to the enter of the
-      // second. Fires automatically as soon as the premise is met.
-      { name: "LoopsSequenced_LinkExitEnter", of: "LoopsSequenced", generates: "LoopsSequencedExitEnter" },
-    ],
-  },
-  {
-    id: "bundle-tiles",
-    name: "Tiles",
-    category: "Bundles",
-    description: "Recursive Tile grid: every Tile can contain four sub-Tiles via the 2×2 SuperTile pattern. SuperTile (2×2), SuperTile4 (4×4), SuperTile8 (8×8), and SuperTile16 (16×16) stamp progressively larger grids by nesting the same pattern. Cardinal directions propagate from outer Tiles to their boundary sub-Tiles via implications. Fully self-similar — no separate type, just Tile.",
-    concepts: [{ name: "Tile" }],
-    contexts: [
-      { name: "WEST-OF",  subject_type: "Concept", target_type: "Concept" },
-      { name: "NORTH-OF", subject_type: "Concept", target_type: "Concept" },
-      { name: "EAST-OF",  subject_type: "Concept", target_type: "Concept" },
-      { name: "SOUTH-OF", subject_type: "Concept", target_type: "Concept" },
-      { name: "PART-OF",  subject_type: "Tile",    target_type: "Tile"    },
-    ],
-    patterns: [
-      {
-        // 2×2 grid: 5 tiles total (1 outer + 4 leaves). The base nesting unit.
-        name: "SuperTile",
-        body: [
-          ["a:Tile", "PART-OF", "self:Tile"],
-          ["b:Tile", "PART-OF", "self:Tile"],
-          ["c:Tile", "PART-OF", "self:Tile"],
-          ["d:Tile", "PART-OF", "self:Tile"],
-          ["a:Tile", "WEST-OF",  "b:Tile"],
-          ["c:Tile", "WEST-OF",  "d:Tile"],
-          ["a:Tile", "NORTH-OF", "c:Tile"],
-          ["b:Tile", "NORTH-OF", "d:Tile"],
-        ],
-        aliases: [
-          { name: "self", type: "Tile" },
-          { name: "a", type: "Tile" }, { name: "b", type: "Tile" },
-          { name: "c", type: "Tile" }, { name: "d", type: "Tile" },
-        ],
-      },
-      {
-        // 4×4 grid: 21 tiles (1 outer + 4 mid + 16 leaf). Each sub-tile is a SuperTile.
-        name: "SuperTile4",
-        body: [
-          ["a:SuperTile:self", "PART-OF", "self:Tile"],
-          ["b:SuperTile:self", "PART-OF", "self:Tile"],
-          ["c:SuperTile:self", "PART-OF", "self:Tile"],
-          ["d:SuperTile:self", "PART-OF", "self:Tile"],
-          ["a:SuperTile:self", "WEST-OF",  "b:SuperTile:self"],
-          ["c:SuperTile:self", "WEST-OF",  "d:SuperTile:self"],
-          ["a:SuperTile:self", "NORTH-OF", "c:SuperTile:self"],
-          ["b:SuperTile:self", "NORTH-OF", "d:SuperTile:self"],
-        ],
-        aliases: [
-          { name: "self", type: "Tile" },
-          { name: "a", type: "Tile" }, { name: "b", type: "Tile" },
-          { name: "c", type: "Tile" }, { name: "d", type: "Tile" },
-        ],
-      },
-      {
-        // 8×8 grid: 85 tiles (1 + 4 + 16 + 64). Three levels of nesting.
-        name: "SuperTile8",
-        body: [
-          ["a:SuperTile4:self", "PART-OF", "self:Tile"],
-          ["b:SuperTile4:self", "PART-OF", "self:Tile"],
-          ["c:SuperTile4:self", "PART-OF", "self:Tile"],
-          ["d:SuperTile4:self", "PART-OF", "self:Tile"],
-          ["a:SuperTile4:self", "WEST-OF",  "b:SuperTile4:self"],
-          ["c:SuperTile4:self", "WEST-OF",  "d:SuperTile4:self"],
-          ["a:SuperTile4:self", "NORTH-OF", "c:SuperTile4:self"],
-          ["b:SuperTile4:self", "NORTH-OF", "d:SuperTile4:self"],
-        ],
-        aliases: [
-          { name: "self", type: "Tile" },
-          { name: "a", type: "Tile" }, { name: "b", type: "Tile" },
-          { name: "c", type: "Tile" }, { name: "d", type: "Tile" },
-        ],
-      },
-      {
-        // 16×16 grid: 341 tiles (1 + 4 + 16 + 64 + 256). Four levels of nesting.
-        name: "SuperTile16",
-        body: [
-          ["a:SuperTile8:self", "PART-OF", "self:Tile"],
-          ["b:SuperTile8:self", "PART-OF", "self:Tile"],
-          ["c:SuperTile8:self", "PART-OF", "self:Tile"],
-          ["d:SuperTile8:self", "PART-OF", "self:Tile"],
-          ["a:SuperTile8:self", "WEST-OF",  "b:SuperTile8:self"],
-          ["c:SuperTile8:self", "WEST-OF",  "d:SuperTile8:self"],
-          ["a:SuperTile8:self", "NORTH-OF", "c:SuperTile8:self"],
-          ["b:SuperTile8:self", "NORTH-OF", "d:SuperTile8:self"],
-        ],
-        aliases: [
-          { name: "self", type: "Tile" },
-          { name: "a", type: "Tile" }, { name: "b", type: "Tile" },
-          { name: "c", type: "Tile" }, { name: "d", type: "Tile" },
-        ],
-      },
-      {
-        name: "TilesWestOf",
-        body: [["a:Tile", "WEST-OF", "b:Tile"]],
-        aliases: [{ name: "a", type: "Tile" }, { name: "b", type: "Tile" }],
-      },
-      {
-        name: "TilesWestOfInner",
-        body: [
-          ["a:SuperTile:b", "WEST-OF", "b:SuperTile:a"],
-          ["a:SuperTile:d", "WEST-OF", "b:SuperTile:c"],
-        ],
-        aliases: [{ name: "a", type: "Tile" }, { name: "b", type: "Tile" }],
-      },
-      {
-        name: "TilesNorthOf",
-        body: [["a:Tile", "NORTH-OF", "b:Tile"]],
-        aliases: [{ name: "a", type: "Tile" }, { name: "b", type: "Tile" }],
-      },
-      {
-        name: "TilesNorthOfInner",
-        body: [
-          ["a:SuperTile:c", "NORTH-OF", "b:SuperTile:a"],
-          ["a:SuperTile:d", "NORTH-OF", "b:SuperTile:b"],
-        ],
-        aliases: [{ name: "a", type: "Tile" }, { name: "b", type: "Tile" }],
-      },
-    ],
-    implications: [
-      { name: "TileWestOf_PropagatesInner",  of: "TilesWestOf",  generates: "TilesWestOfInner"  },
-      { name: "TileNorthOf_PropagatesInner", of: "TilesNorthOf", generates: "TilesNorthOfInner" },
-    ],
-  },
-  {
-    id: "bundle-input",
-    name: "Input",
-    category: "Bundles",
-    description: "The Input primitive — the engine's first interactive effect. Where pure derivation (Fire All) mints triples with no outside dependency, Input pauses and asks the user. A Choice IS-A Input. A Choice points at its candidate Options via OF. When the user resolves a Choice, the engine records `Choice CHOSE option` and types that option as Chosen (Chosen IS-A Option). The engine's solicit scanner runs after every fire: any Choice that has Options (OF) but no resolution (no CHOSE) is surfaced in a modal asking the user to pick. Resolving a Choice re-fires to quiescence — so a pick can unlock downstream implications or expose further Choices, which solicit in turn. Comes with a seed: a single unresolved DoorChoice between LeftDoor and RightDoor — import it and Fire All to see the solicitation modal.",
-    dependsOn: [],
-    concepts: [
-      // Input — the primitive. The parent type for anything that requires a
-      // user decision to resolve. Distinct from Implication (which derives
-      // automatically): an Input blocks on the user.
-      { name: "Input" },
-      // Choice IS-A Input — the concrete interactive node. A Choice offers
-      // Options (via OF) and resolves to a Chosen (via CHOSE).
-      { name: "Choice", types: ["Input"] },
-      // Option — a candidate a Choice can resolve to. Wired via Choice OF Option.
-      { name: "Option" },
-      // Chosen IS-A Option — an Option that has been picked. The resolution
-      // both adds Choice CHOSE option AND types the option as Chosen, so a
-      // resolved option is queryable as a Chosen.
-      { name: "Chosen", types: ["Option"] },
-    ],
-    contexts: [
-      // OF reuses the engine's OF (relaxed to Concept→Concept). A Choice is
-      // "of" its candidate Options — this is the option set the user picks from.
-      { name: "OF",    subject_type: "Choice", target_type: "Option" },
-      // CHOSE — the resolution edge, introduced by this bundle. Choice CHOSE
-      // Chosen records which option the user selected. Its ABSENCE is what the
-      // solicit scanner detects: a Choice with Options but no CHOSE is pending.
-      { name: "CHOSE", subject_type: "Choice", target_type: "Chosen" },
-    ],
-    patterns: [
-      // The pattern half of a salt-side derivation: once any Choice has chosen
-      // an Option, type that option as Chosen. This is what realizes the
-      // ontology's "Chosen IS Option" — picked options become a Chosen.
-      // Pepper wrote the CHOSE edge (its narrow write); salt derives the
-      // type stamp from it. Without this rule, isA(option, "Chosen") would
-      // be false even after resolution.
-      {
-        name: "Input_ChosenIsTypedOf",
-        body: [["c:Choice", "CHOSE", "o:Option"]],
-        aliases: [
-          { name: "c", type: "Choice" },
-          { name: "o", type: "Option" },
-        ],
-      },
-      {
-        name: "Input_ChosenIsTypedGen",
-        body: [["o:Option", "IS", "Chosen"]],
-        aliases: [{ name: "o", type: "Option" }],
-      },
-    ],
-    implications: [
-      // Single rule. Fires whenever a Choice CHOSE an Option, types the option
-      // as Chosen. Idempotent — the IS triple dedups on re-fire.
-      { name: "Input_ChosenIsTyped", of: "Input_ChosenIsTypedOf", generates: "Input_ChosenIsTypedGen" },
-    ],
-    seed: {
-      concepts: [
-        // A single unresolved Choice between two doors. After import, Fire All
-        // (or any fire) triggers the solicitation modal asking which door.
-        { name: "DoorChoice", types: ["Choice"] },
-        { name: "LeftDoor",   types: ["Option"] },
-        { name: "RightDoor",  types: ["Option"] },
-      ],
-      triples: [
-        // DoorChoice OF its two options — the candidate set. No CHOSE yet, so
-        // the scanner flags DoorChoice as pending and solicits the user.
-        ["DoorChoice", "OF", "LeftDoor"],
-        ["DoorChoice", "OF", "RightDoor"],
-      ],
-    },
-  },
-  // ===========================================================================
-  // bundle-tetris — single-cell Tetris on the additive Position+UPDATES model
-  // ===========================================================================
-  // Every block's position is a Position node carrying FOR (which block) and
-  // AT_CELL (which cell). When a block moves — gravity, line-clear shift —
-  // a rule mints a fresh Position and points its UPDATES at the previous.
-  // The previous Position now has a successor, so the at_cell pattern
-  // (FOR + AT_CELL + NOT newer UPDATES) no longer returns it. The graph
-  // keeps every Position ever generated; current state is derived by the
-  // NOT-UPDATES check, never by mutation or by tense markers on blocks.
-  //
-  // First cut is single-cell blocks on a 4×4 board. Tetrominoes (multi-cell
-  // pieces with rotation) reuse the same Position/UPDATES machinery and are
-  // a clean extension once this architecture has settled. Multi-row shift
-  // after a line clear uses single-hop ROW_ABOVE — only blocks directly
-  // above the cleared row shift down in the first wave; the resulting
-  // blocks then occupy the cleared row and (in v1) get cleared themselves
-  // on a subsequent pass, producing a two-row cascade. Cleaner shift
-  // semantics are a v2 concern.
-  //
-  // Salt rules in this bundle:
-  //   Tetris_Spawn          — SpawnChoice CHOSE cell → mint Block + Position
-  //                            + tie a fresh Step (Down/Left/Right) to the
-  //                            new block
-  //   Tetris_NextSpawn      — after a SpawnChoice resolves, mint the next
-  //                            (the cartridge picks when to resolve it,
-  //                            so the new piece doesn't appear until the
-  //                            cartridge says go)
-  //   Tetris_StepDown       — Step CHOSE Down → mint Position one cell south
-  //   Tetris_StepLeft       — Step CHOSE Left → mint Position one cell west
-  //   Tetris_StepRight      — Step CHOSE Right → mint Position one cell east
-  //   Tetris_NextStep       — after any Step resolves, mint the next Step
-  //                            with the same three options
-  //   Tetris_OnClearedRow   — current Positions whose cell is in a FullRow
-  //                            get superseded by a Position AT Discarded
-  //   Tetris_ShiftAbove     — current Positions whose cell is directly above
-  //                            a FullRow shift one cell south
-  //
-  // One Step per block per cycle — bundling Down/Left/Right into one Choice
-  // serializes movement and prevents the position chain from forking when
-  // gravity-down and lateral fire in the same pass (each would mint from the
-  // same prior current, leaving two current positions). The auto-ticker
-  // submits Down; the cartridge's keyboard handler can preempt with Left/
-  // Right at any time. NextStep mints the successor regardless of which
-  // option won, so the player always has another Step to pick from.
-  //
-  // Full-row DETECTION is owned by the cartridge: a salt rule with N
-  // distinct cells in a row needs N! permutations to enumerate at match
-  // time, intractable past a tiny grid. The cartridge iterates each row
-  // on Quiescent (gated on "no block currently falling") and stamps
-  // Row_X IS FullRow when full, triggering the OnCleared + ShiftAbove
-  // cascade above.
-  //
-  // Patref tokens (outer:Pattern:inner) are NOT expanded in implication OF
-  // bodies — expandPatrefs is only called from stamping and Gen paths. So
-  // the at_cell pattern is kept here for documentation/stamping use, but the
-  // three triples that make it up are INLINED into each implication's OF
-  // body. Repetitive but correct.
-  //
-  // The cartridge owns: which column to spawn into (random / next-in-bag /
-  // player-driven), driving GravityStep ticks via setInterval, detecting
-  // when a block can no longer fall and stopping its gravity loop,
-  // game-over detection (spawn cell occupied at spawn time), and rendering.
-];
+// PATTERN_LIBRARY is populated at runtime by loadBundlesFromRepo() (below).
+// It starts empty; the Imports tab and ensureBundle read it once bundles arrive.
+let PATTERN_LIBRARY = [];
+
+// ---------------------------------------------------------------------------
+// DYNAMIC BUNDLE LOADING — the pattern library is scraped at runtime from the
+// project's GitHub repo, where each bundle lives as its own JSON file under
+// bundles/. Keeps this file lean and lets bundles be added or edited as
+// standalone files without touching the editor.
+//
+// Discovery order:
+//   1. GitHub Contents API — true auto-scrape: lists every *.json in the
+//      bundles/ dir, no manifest to maintain. CORS-enabled from any origin
+//      (file://, GitHub Pages, elsewhere). Unauthenticated calls are rate-
+//      limited (~60/hr), but a load is one listing call + N file fetches.
+//   2. bundles/manifest.json — fallback when the API is unreachable or rate-
+//      limited. Fetched page-relative first (works on GitHub Pages), then from
+//      raw.githubusercontent.com. Lists the bundle filenames explicitly.
+//
+// Edit BUNDLE_SOURCE to point at wherever the bundles live. When the editor is
+// served from a GitHub Pages URL (owner.github.io/repo/...), owner/repo are
+// auto-detected and this config is only the fallback default.
+// ---------------------------------------------------------------------------
+const BUNDLE_SOURCE = {
+  owner:  "brandonjcampbell",
+  repo:   "Salt",
+  branch: "main",
+  dir:    "bundles",
+};
+
+// Resolve the effective source, auto-detecting from a GitHub Pages URL when
+// possible so a fork "just works" without editing BUNDLE_SOURCE.
+function resolveBundleSource() {
+  const s = { ...BUNDLE_SOURCE };
+  try {
+    const host = location.hostname || "";
+    if (host.endsWith(".github.io")) {
+      s.owner = host.slice(0, -".github.io".length) || s.owner;
+      // Project pages live at /<repo>/...; user/org pages at /.
+      const seg = location.pathname.split("/").filter(Boolean);
+      if (seg.length) s.repo = seg[0];
+    }
+  } catch (e) { /* non-browser / opaque origin — keep config defaults */ }
+  return s;
+}
+
+// Primary path: list bundles/ via the GitHub Contents API, then fetch each.
+async function fetchBundlesViaApi(src) {
+  const api = `https://api.github.com/repos/${src.owner}/${src.repo}/contents/${src.dir}?ref=${encodeURIComponent(src.branch)}`;
+  const res = await fetch(api, { headers: { "Accept": "application/vnd.github+json" } });
+  if (!res.ok) throw new Error(`contents API ${res.status}`);
+  const listing = await res.json();
+  if (!Array.isArray(listing)) throw new Error("contents API returned non-array");
+  const files = listing.filter(f =>
+    f.type === "file" && f.name.endsWith(".json") && f.name !== "manifest.json");
+  const out = [];
+  for (const f of files) {
+    try {
+      const r = await fetch(f.download_url);
+      if (!r.ok) throw new Error(`${f.name} ${r.status}`);
+      out.push(await r.json());
+    } catch (e) {
+      console.warn(`bundle skipped: ${f.name} — ${e.message}`);
+    }
+  }
+  return out;
+}
+
+// Fallback path: read bundles/manifest.json (page-relative, then raw host).
+async function fetchBundlesViaManifest(src) {
+  const candidates = [
+    `${src.dir}/manifest.json`,
+    `https://raw.githubusercontent.com/${src.owner}/${src.repo}/${src.branch}/${src.dir}/manifest.json`,
+  ];
+  let base = null, names = null;
+  for (const url of candidates) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) continue;
+      const m = await r.json();
+      if (m && Array.isArray(m.bundles)) {
+        names = m.bundles;
+        base = url.slice(0, url.lastIndexOf("/") + 1);
+        break;
+      }
+    } catch (e) { /* try next candidate */ }
+  }
+  if (!names) throw new Error("no reachable manifest.json");
+  const out = [];
+  for (const name of names) {
+    try {
+      const r = await fetch(base + name);
+      if (!r.ok) throw new Error(`${name} ${r.status}`);
+      out.push(await r.json());
+    } catch (e) {
+      console.warn(`bundle skipped: ${name} — ${e.message}`);
+    }
+  }
+  return out;
+}
+
+// Populate PATTERN_LIBRARY from the repo. Runs once at boot; re-renders once
+// bundles arrive so the Imports tab catches up from its initial empty state.
+async function loadBundlesFromRepo() {
+  const src = resolveBundleSource();
+  let bundles = [];
+  try {
+    bundles = await fetchBundlesViaApi(src);
+  } catch (apiErr) {
+    try {
+      bundles = await fetchBundlesViaManifest(src);
+    } catch (manErr) {
+      console.error("bundle load failed:", apiErr.message, "/", manErr.message);
+      if (typeof toast === "function") {
+        toast(`Couldn't load bundles from ${esc(src.owner)}/${esc(src.repo)} · ${esc(apiErr.message)}`, "error");
+      }
+      return;
+    }
+  }
+  // De-dupe by id (a fork could ship the same id twice); last write wins.
+  const byId = new Map();
+  for (const b of bundles) if (b && b.id) byId.set(b.id, b);
+  PATTERN_LIBRARY = [...byId.values()];
+  if (typeof logEntry === "function") {
+    logEntry("sys", `loaded ${PATTERN_LIBRARY.length} bundle${PATTERN_LIBRARY.length === 1 ? "" : "s"} from <code>${esc(src.owner)}/${esc(src.repo)}</code>`);
+  }
+  if (typeof toast === "function" && PATTERN_LIBRARY.length) {
+    toast(`Loaded ${PATTERN_LIBRARY.length} bundle${PATTERN_LIBRARY.length === 1 ? "" : "s"} from repo`, "success");
+  }
+  if (typeof render === "function") render();
+}
 
 function libraryCategories() {
   const out = [];
@@ -15700,6 +15332,7 @@ window.addEventListener('resize', () => {
 });
 
 reset();
+loadBundlesFromRepo();
 </script>
 </body>
 </html>

@@ -1,0 +1,13 @@
+{
+  "bundles": [
+    "bundle-attributes.json",
+    "bundle-spatial.json",
+    "bundle-cards.json",
+    "bundle-playspace.json",
+    "bundle-temporal.json",
+    "bundle-agency.json",
+    "bundle-loop.json",
+    "bundle-tiles.json",
+    "bundle-input.json"
+  ]
+}

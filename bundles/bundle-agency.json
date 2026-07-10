@@ -1,0 +1,21 @@
+{
+  "id": "bundle-agency",
+  "name": "Agency",
+  "category": "Bundles",
+  "description": "Agency vocabulary. An Agent makes Choices. MAKES connects an Agent to the Choice it makes. Choice itself (and its OF / CHOSE option machinery) comes from bundle-input, so an Agent's Choice is interactive — an unresolved Choice an Agent MAKES will solicit that agent for a decision. Useful any time you need entities that select among alternatives.",
+  "dependsOn": [
+    "bundle-input"
+  ],
+  "concepts": [
+    {
+      "name": "Agent"
+    }
+  ],
+  "contexts": [
+    {
+      "name": "MAKES",
+      "subject_type": "Agent",
+      "target_type": "Choice"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "id": "bundle-cards",
+  "name": "Cards",
+  "category": "Bundles",
+  "description": "Card-game vocabulary. A Card has one or more Prints (physical or digital instances of the same card). Each Print IS-A Positionable (from bundle-spatial), so the relationship between a Print and its Position is expressed by the Positionable HAS Position chain — no separate OF (Position → Print) needed. A Position additionally lives IN a Zone (hand, deck, table, exile, …) AT an Index (which slot). Common triple shapes: Print OF Card · Print HAS Position · Position IN Zone · Position AT Index · Index OF Zone. Depends on bundle-spatial (for Position, Location, Positionable) — which itself pulls in bundle-attributes and bundle-temporal.",
+  "dependsOn": [
+    "bundle-spatial"
+  ],
+  "concepts": [
+    {
+      "name": "Card"
+    },
+    {
+      "name": "Print",
+      "types": [
+        "Positionable",
+        "Temporaneous"
+      ]
+    },
+    {
+      "name": "Zone"
+    },
+    {
+      "name": "Index"
+    }
+  ],
+  "contexts": [
+    {
+      "name": "IN",
+      "subject_type": "Position",
+      "target_type": "Zone"
+    },
+    {
+      "name": "OF",
+      "subject_type": "Print",
+      "target_type": "Card"
+    },
+    {
+      "name": "AT",
+      "subject_type": "Position",
+      "target_type": "Index"
+    }
+  ]
+}

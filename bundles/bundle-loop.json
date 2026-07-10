@@ -1,0 +1,188 @@
+{
+  "id": "bundle-loop",
+  "name": "Loop",
+  "category": "Bundles",
+  "description": "Control-flow loop primitive. LoopTick IS Tick (from the Temporal bundle), so loop ticks participate in THEN/AT timing along with any other ticked entity. LoopTicks connect via THEN to form a sequence; each tick lives WITHIN a Loop. LoopEnter and LoopExit are LoopTick subtypes marking entry and exit.",
+  "dependsOn": [
+    "bundle-temporal"
+  ],
+  "concepts": [
+    {
+      "name": "Loop"
+    },
+    {
+      "name": "LoopTick",
+      "types": [
+        "Tick"
+      ]
+    },
+    {
+      "name": "LoopEnter",
+      "types": [
+        "LoopTick"
+      ]
+    },
+    {
+      "name": "LoopExit",
+      "types": [
+        "LoopTick"
+      ]
+    }
+  ],
+  "contexts": [
+    {
+      "name": "WITHIN",
+      "subject_type": "Tick",
+      "target_type": "Loop"
+    }
+  ],
+  "patterns": [
+    {
+      "name": "SimpleLoop",
+      "body": [
+        [
+          "enter:LoopEnter",
+          "WITHIN",
+          "loop:Loop"
+        ],
+        [
+          "tick:LoopTick",
+          "WITHIN",
+          "loop:Loop"
+        ],
+        [
+          "exit:LoopExit",
+          "WITHIN",
+          "loop:Loop"
+        ],
+        [
+          "enter:LoopEnter",
+          "THEN",
+          "tick:LoopTick"
+        ],
+        [
+          "tick:LoopTick",
+          "THEN",
+          "exit:LoopExit"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "loop",
+          "type": "Loop"
+        },
+        {
+          "name": "enter",
+          "type": "LoopEnter"
+        },
+        {
+          "name": "tick",
+          "type": "LoopTick"
+        },
+        {
+          "name": "exit",
+          "type": "LoopExit"
+        }
+      ]
+    },
+    {
+      "name": "LoopChain",
+      "body": [
+        [
+          "a:LoopTick",
+          "THEN",
+          "b:LoopTick"
+        ],
+        [
+          "a:LoopTick",
+          "WITHIN",
+          "loop:Loop"
+        ],
+        [
+          "b:LoopTick",
+          "WITHIN",
+          "loop:Loop"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "loop",
+          "type": "Loop"
+        },
+        {
+          "name": "a",
+          "type": "LoopTick"
+        },
+        {
+          "name": "b",
+          "type": "LoopTick"
+        }
+      ]
+    },
+    {
+      "name": "LoopsSequenced",
+      "body": [
+        [
+          "a:Loop",
+          "THEN",
+          "b:Loop"
+        ],
+        [
+          "exit:LoopExit",
+          "WITHIN",
+          "a:Loop"
+        ],
+        [
+          "enter:LoopEnter",
+          "WITHIN",
+          "b:Loop"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "a",
+          "type": "Loop"
+        },
+        {
+          "name": "b",
+          "type": "Loop"
+        },
+        {
+          "name": "exit",
+          "type": "LoopExit"
+        },
+        {
+          "name": "enter",
+          "type": "LoopEnter"
+        }
+      ]
+    },
+    {
+      "name": "LoopsSequencedExitEnter",
+      "body": [
+        [
+          "exit:LoopExit",
+          "THEN",
+          "enter:LoopEnter"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "exit",
+          "type": "LoopExit"
+        },
+        {
+          "name": "enter",
+          "type": "LoopEnter"
+        }
+      ]
+    }
+  ],
+  "implications": [
+    {
+      "name": "LoopsSequenced_LinkExitEnter",
+      "of": "LoopsSequenced",
+      "generates": "LoopsSequencedExitEnter"
+    }
+  ]
+}

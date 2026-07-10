@@ -1,0 +1,39 @@
+{
+  "id": "bundle-spatial",
+  "name": "Spatial",
+  "category": "Bundles",
+  "description": "Spatial vocabulary for tracking where things are. A Positionable is anything whose location can be tracked. It HAS a Position (a value-snapshot of where it is). The Position resolves to a Location AT some place. Both Position and Location IS-A Attribute, so they share the attribute value-space and can participate in OF / UPDATES chains for tracking changes over time. This bundle is the home of all locative concepts — bundle-cards depends on it for Position and Location.",
+  "dependsOn": [
+    "bundle-attributes",
+    "bundle-temporal"
+  ],
+  "concepts": [
+    {
+      "name": "Positionable"
+    },
+    {
+      "name": "Position",
+      "types": [
+        "Attribute"
+      ]
+    },
+    {
+      "name": "Location",
+      "types": [
+        "Attribute"
+      ]
+    }
+  ],
+  "contexts": [
+    {
+      "name": "HAS",
+      "subject_type": "Positionable",
+      "target_type": "Position"
+    },
+    {
+      "name": "AT",
+      "subject_type": "Position",
+      "target_type": "Location"
+    }
+  ]
+}

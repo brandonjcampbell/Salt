@@ -1,0 +1,118 @@
+{
+  "id": "bundle-input",
+  "name": "Input",
+  "category": "Bundles",
+  "description": "The Input primitive — the engine's first interactive effect. Where pure derivation (Fire All) mints triples with no outside dependency, Input pauses and asks the user. A Choice IS-A Input. A Choice points at its candidate Options via OF. When the user resolves a Choice, the engine records `Choice CHOSE option` and types that option as Chosen (Chosen IS-A Option). The engine's solicit scanner runs after every fire: any Choice that has Options (OF) but no resolution (no CHOSE) is surfaced in a modal asking the user to pick. Resolving a Choice re-fires to quiescence — so a pick can unlock downstream implications or expose further Choices, which solicit in turn. Comes with a seed: a single unresolved DoorChoice between LeftDoor and RightDoor — import it and Fire All to see the solicitation modal.",
+  "dependsOn": [],
+  "concepts": [
+    {
+      "name": "Input"
+    },
+    {
+      "name": "Choice",
+      "types": [
+        "Input"
+      ]
+    },
+    {
+      "name": "Option"
+    },
+    {
+      "name": "Chosen",
+      "types": [
+        "Option"
+      ]
+    }
+  ],
+  "contexts": [
+    {
+      "name": "OF",
+      "subject_type": "Choice",
+      "target_type": "Option"
+    },
+    {
+      "name": "CHOSE",
+      "subject_type": "Choice",
+      "target_type": "Chosen"
+    }
+  ],
+  "patterns": [
+    {
+      "name": "Input_ChosenIsTypedOf",
+      "body": [
+        [
+          "c:Choice",
+          "CHOSE",
+          "o:Option"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "c",
+          "type": "Choice"
+        },
+        {
+          "name": "o",
+          "type": "Option"
+        }
+      ]
+    },
+    {
+      "name": "Input_ChosenIsTypedGen",
+      "body": [
+        [
+          "o:Option",
+          "IS",
+          "Chosen"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "o",
+          "type": "Option"
+        }
+      ]
+    }
+  ],
+  "implications": [
+    {
+      "name": "Input_ChosenIsTyped",
+      "of": "Input_ChosenIsTypedOf",
+      "generates": "Input_ChosenIsTypedGen"
+    }
+  ],
+  "seed": {
+    "concepts": [
+      {
+        "name": "DoorChoice",
+        "types": [
+          "Choice"
+        ]
+      },
+      {
+        "name": "LeftDoor",
+        "types": [
+          "Option"
+        ]
+      },
+      {
+        "name": "RightDoor",
+        "types": [
+          "Option"
+        ]
+      }
+    ],
+    "triples": [
+      [
+        "DoorChoice",
+        "OF",
+        "LeftDoor"
+      ],
+      [
+        "DoorChoice",
+        "OF",
+        "RightDoor"
+      ]
+    ]
+  }
+}

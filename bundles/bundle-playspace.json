@@ -1,0 +1,56 @@
+{
+  "id": "bundle-playspace",
+  "name": "Playspace",
+  "category": "Bundles",
+  "description": "Top-level play area. A Playspace belongs to an Agent (Playspace OF Agent) — typically one Playspace per player. The Playspace owns a collection of Zones via OF (Zone OF Playspace). The four canonical Zone subtypes are Hand (cards in possession), Deck (draw pile), DiscardPile (used cards face up), and BanishPile (removed-from-game cards). Each Card carries its current Zone via HAS (Card HAS Zone), so the Zone a card occupies is a first-class fact you can query without walking through Print/Position. Depends on bundle-cards (for Card and Zone) and bundle-agency (for Agent).",
+  "dependsOn": [
+    "bundle-cards",
+    "bundle-agency"
+  ],
+  "concepts": [
+    {
+      "name": "Playspace"
+    },
+    {
+      "name": "Hand",
+      "types": [
+        "Zone"
+      ]
+    },
+    {
+      "name": "Deck",
+      "types": [
+        "Zone"
+      ]
+    },
+    {
+      "name": "DiscardPile",
+      "types": [
+        "Zone"
+      ]
+    },
+    {
+      "name": "BanishPile",
+      "types": [
+        "Zone"
+      ]
+    }
+  ],
+  "contexts": [
+    {
+      "name": "OF",
+      "subject_type": "Zone",
+      "target_type": "Playspace"
+    },
+    {
+      "name": "OF",
+      "subject_type": "Playspace",
+      "target_type": "Agent"
+    },
+    {
+      "name": "HAS",
+      "subject_type": "Card",
+      "target_type": "Zone"
+    }
+  ]
+}

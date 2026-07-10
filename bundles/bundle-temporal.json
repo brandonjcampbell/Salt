@@ -1,0 +1,39 @@
+{
+  "id": "bundle-temporal",
+  "name": "Temporal",
+  "category": "Bundles",
+  "description": "Time vocabulary. Tick is a unit of discrete time. THEN orders one concept after another. AT is a general locative — historically temporal (X AT Tick), now relaxed to Concept→Concept so other vocabularies can reuse it (e.g. Position AT Index from bundle-cards). Temporaneous marks anything whose State evolves over time; the Temporaneous HAS a State, and the State AT a Tick. Build chains of States across Ticks to model how something changes moment-to-moment.",
+  "concepts": [
+    {
+      "name": "Tick"
+    },
+    {
+      "name": "Temporaneous"
+    },
+    {
+      "name": "State"
+    }
+  ],
+  "contexts": [
+    {
+      "name": "THEN",
+      "subject_type": "Concept",
+      "target_type": "Concept"
+    },
+    {
+      "name": "AT",
+      "subject_type": "Concept",
+      "target_type": "Concept"
+    },
+    {
+      "name": "HAS",
+      "subject_type": "Temporaneous",
+      "target_type": "State"
+    },
+    {
+      "name": "AT",
+      "subject_type": "State",
+      "target_type": "Tick"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "id": "bundle-attributes",
+  "name": "Attributes",
+  "category": "Bundles",
+  "description": "Attributes & Modifiers vocabulary. An Attribute is a property a concept can have. A Value holds the Attribute's current setting and points back to its Attribute via OF. Value IS-A Temporaneous, so a Value's content evolves over time — every Value HAS State AT Tick chains let you track how an attribute's setting changes moment-to-moment. State UPDATES Value expresses causation: applying this State to that Value produces the Value's next State. A Modifier in the old sense (an explicit '+5 healing' or '-3 poison') is now just a State — same vocabulary, no separate concept. Typical use: HitPoints is an Attribute; HPCurrent is a Value OF HitPoints; HPCurrent HAS HP75 AT Tick3; Poison5 (a State) UPDATES HPCurrent (which together produce HP70 at Tick4).",
+  "dependsOn": [
+    "bundle-temporal"
+  ],
+  "concepts": [
+    {
+      "name": "Attribute"
+    },
+    {
+      "name": "Value",
+      "types": [
+        "Temporaneous"
+      ]
+    }
+  ],
+  "contexts": [
+    {
+      "name": "OF",
+      "subject_type": "Value",
+      "target_type": "Attribute"
+    },
+    {
+      "name": "UPDATES",
+      "subject_type": "State",
+      "target_type": "Value"
+    }
+  ]
+}

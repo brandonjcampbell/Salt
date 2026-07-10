@@ -1,0 +1,410 @@
+{
+  "id": "bundle-tiles",
+  "name": "Tiles",
+  "category": "Bundles",
+  "description": "Recursive Tile grid: every Tile can contain four sub-Tiles via the 2×2 SuperTile pattern. SuperTile (2×2), SuperTile4 (4×4), SuperTile8 (8×8), and SuperTile16 (16×16) stamp progressively larger grids by nesting the same pattern. Cardinal directions propagate from outer Tiles to their boundary sub-Tiles via implications. Fully self-similar — no separate type, just Tile.",
+  "concepts": [
+    {
+      "name": "Tile"
+    }
+  ],
+  "contexts": [
+    {
+      "name": "WEST-OF",
+      "subject_type": "Concept",
+      "target_type": "Concept"
+    },
+    {
+      "name": "NORTH-OF",
+      "subject_type": "Concept",
+      "target_type": "Concept"
+    },
+    {
+      "name": "EAST-OF",
+      "subject_type": "Concept",
+      "target_type": "Concept"
+    },
+    {
+      "name": "SOUTH-OF",
+      "subject_type": "Concept",
+      "target_type": "Concept"
+    },
+    {
+      "name": "PART-OF",
+      "subject_type": "Tile",
+      "target_type": "Tile"
+    }
+  ],
+  "patterns": [
+    {
+      "name": "SuperTile",
+      "body": [
+        [
+          "a:Tile",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "b:Tile",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "c:Tile",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "d:Tile",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "a:Tile",
+          "WEST-OF",
+          "b:Tile"
+        ],
+        [
+          "c:Tile",
+          "WEST-OF",
+          "d:Tile"
+        ],
+        [
+          "a:Tile",
+          "NORTH-OF",
+          "c:Tile"
+        ],
+        [
+          "b:Tile",
+          "NORTH-OF",
+          "d:Tile"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "self",
+          "type": "Tile"
+        },
+        {
+          "name": "a",
+          "type": "Tile"
+        },
+        {
+          "name": "b",
+          "type": "Tile"
+        },
+        {
+          "name": "c",
+          "type": "Tile"
+        },
+        {
+          "name": "d",
+          "type": "Tile"
+        }
+      ]
+    },
+    {
+      "name": "SuperTile4",
+      "body": [
+        [
+          "a:SuperTile:self",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "b:SuperTile:self",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "c:SuperTile:self",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "d:SuperTile:self",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "a:SuperTile:self",
+          "WEST-OF",
+          "b:SuperTile:self"
+        ],
+        [
+          "c:SuperTile:self",
+          "WEST-OF",
+          "d:SuperTile:self"
+        ],
+        [
+          "a:SuperTile:self",
+          "NORTH-OF",
+          "c:SuperTile:self"
+        ],
+        [
+          "b:SuperTile:self",
+          "NORTH-OF",
+          "d:SuperTile:self"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "self",
+          "type": "Tile"
+        },
+        {
+          "name": "a",
+          "type": "Tile"
+        },
+        {
+          "name": "b",
+          "type": "Tile"
+        },
+        {
+          "name": "c",
+          "type": "Tile"
+        },
+        {
+          "name": "d",
+          "type": "Tile"
+        }
+      ]
+    },
+    {
+      "name": "SuperTile8",
+      "body": [
+        [
+          "a:SuperTile4:self",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "b:SuperTile4:self",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "c:SuperTile4:self",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "d:SuperTile4:self",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "a:SuperTile4:self",
+          "WEST-OF",
+          "b:SuperTile4:self"
+        ],
+        [
+          "c:SuperTile4:self",
+          "WEST-OF",
+          "d:SuperTile4:self"
+        ],
+        [
+          "a:SuperTile4:self",
+          "NORTH-OF",
+          "c:SuperTile4:self"
+        ],
+        [
+          "b:SuperTile4:self",
+          "NORTH-OF",
+          "d:SuperTile4:self"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "self",
+          "type": "Tile"
+        },
+        {
+          "name": "a",
+          "type": "Tile"
+        },
+        {
+          "name": "b",
+          "type": "Tile"
+        },
+        {
+          "name": "c",
+          "type": "Tile"
+        },
+        {
+          "name": "d",
+          "type": "Tile"
+        }
+      ]
+    },
+    {
+      "name": "SuperTile16",
+      "body": [
+        [
+          "a:SuperTile8:self",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "b:SuperTile8:self",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "c:SuperTile8:self",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "d:SuperTile8:self",
+          "PART-OF",
+          "self:Tile"
+        ],
+        [
+          "a:SuperTile8:self",
+          "WEST-OF",
+          "b:SuperTile8:self"
+        ],
+        [
+          "c:SuperTile8:self",
+          "WEST-OF",
+          "d:SuperTile8:self"
+        ],
+        [
+          "a:SuperTile8:self",
+          "NORTH-OF",
+          "c:SuperTile8:self"
+        ],
+        [
+          "b:SuperTile8:self",
+          "NORTH-OF",
+          "d:SuperTile8:self"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "self",
+          "type": "Tile"
+        },
+        {
+          "name": "a",
+          "type": "Tile"
+        },
+        {
+          "name": "b",
+          "type": "Tile"
+        },
+        {
+          "name": "c",
+          "type": "Tile"
+        },
+        {
+          "name": "d",
+          "type": "Tile"
+        }
+      ]
+    },
+    {
+      "name": "TilesWestOf",
+      "body": [
+        [
+          "a:Tile",
+          "WEST-OF",
+          "b:Tile"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "a",
+          "type": "Tile"
+        },
+        {
+          "name": "b",
+          "type": "Tile"
+        }
+      ]
+    },
+    {
+      "name": "TilesWestOfInner",
+      "body": [
+        [
+          "a:SuperTile:b",
+          "WEST-OF",
+          "b:SuperTile:a"
+        ],
+        [
+          "a:SuperTile:d",
+          "WEST-OF",
+          "b:SuperTile:c"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "a",
+          "type": "Tile"
+        },
+        {
+          "name": "b",
+          "type": "Tile"
+        }
+      ]
+    },
+    {
+      "name": "TilesNorthOf",
+      "body": [
+        [
+          "a:Tile",
+          "NORTH-OF",
+          "b:Tile"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "a",
+          "type": "Tile"
+        },
+        {
+          "name": "b",
+          "type": "Tile"
+        }
+      ]
+    },
+    {
+      "name": "TilesNorthOfInner",
+      "body": [
+        [
+          "a:SuperTile:c",
+          "NORTH-OF",
+          "b:SuperTile:a"
+        ],
+        [
+          "a:SuperTile:d",
+          "NORTH-OF",
+          "b:SuperTile:b"
+        ]
+      ],
+      "aliases": [
+        {
+          "name": "a",
+          "type": "Tile"
+        },
+        {
+          "name": "b",
+          "type": "Tile"
+        }
+      ]
+    }
+  ],
+  "implications": [
+    {
+      "name": "TileWestOf_PropagatesInner",
+      "of": "TilesWestOf",
+      "generates": "TilesWestOfInner"
+    },
+    {
+      "name": "TileNorthOf_PropagatesInner",
+      "of": "TilesNorthOf",
+      "generates": "TilesNorthOfInner"
+    }
+  ]
+}

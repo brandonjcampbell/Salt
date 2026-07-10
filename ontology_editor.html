@@ -2548,6 +2548,7 @@ body.tree-dragging .tree-row.tree-folder { opacity: 0.85; }
 .filter-pill.on.k-runtime { color: #8B6320;          border-color: #B0823A;          background: rgba(176,130,58,0.14); }
 .filter-pill.on.k-impl    { color: #6E4068;          border-color: #6E4068;          background: rgba(110,64,104,0.12); }
 .filter-pill.on.k-pattern { color: var(--brass-dim); border-color: var(--brass-dim); background: rgba(255,0,111,0.06); border-style: dashed; }
+.filter-pill.on.k-context { color: #826772;          border-color: #826772;          background: rgba(130,103,114,0.12); }
 .filter-pill.mag-pill { font-variant-numeric: tabular-nums; min-width: 32px; }
 .filter-pill.on.mag-pill { color: var(--brass); border-color: var(--brass-dim); background: rgba(255,0,111,0.06); }
 
@@ -7071,6 +7072,11 @@ function isNodeVisible(name) {
     }
   }
   if (state.filters.nodes.has(classifyNode(name))) return false;
+  // "context" is a shape-based pseudo-kind, not a classifyNode layer: it hides
+  // every context-instance node (the fat right-pointing arrows — IS, THEN, OF,
+  // SCOPED_TO, …) regardless of which layer they live in. The meta "Context"
+  // node itself is a plain circle, so it's left visible.
+  if (state.filters.nodes.has("context") && name !== "Context" && state.graph.isA(name, "Context")) return false;
   for (const t of state.filters.types) {
     if (state.graph.isA(name, t)) return false;
   }
@@ -7102,7 +7108,7 @@ function buildFilterUI() {
   if (!bar) return;
   // Always invalidate the depth cache when rebuilding filters — the graph may have changed.
   invalidateDepthCache();
-  const nodeKinds = ["std", "rule", "content", "runtime", "impl", "pattern"];
+  const nodeKinds = ["std", "rule", "content", "runtime", "impl", "pattern", "context"];
   const edgeNames = [...new Set(state.graph.contexts.map(c => c.name))].sort();
   // Concept types with at least one direct subtype/instance, excluding meta types
   const skip = new Set(["Concept", "Context", "Pattern"]);
@@ -7656,6 +7662,9 @@ function setupDrag(svg) {
   }
   function start(evt) {
     const tool = state.graphTool || "select";
+    // Multi-touch is a pinch-zoom gesture (handled in setupPanZoom) — never let
+    // a second finger get interpreted as the start of a node drag.
+    if (evt.touches && evt.touches.length > 1) return;
     if (evt.button !== undefined && evt.button !== 0) return; // right-click handled by contextmenu / pan marquee
     const target = evt.target.closest(".graph-node");
     const edgeTarget = evt.target.closest(".graph-edge");
@@ -8031,10 +8040,77 @@ function setupPanZoom(svg) {
     applyViewportTransform();
     updateZoomReadout();
   }
+  // ---- touch: one-finger pan, two-finger pinch-zoom -----------------------
+  // Node dragging is handled by setupDrag's own touch listeners (single-finger
+  // on a node). Here we cover the two gestures that were mouse/wheel-only:
+  //   • one finger on empty background → pan (reuses the pan logic above)
+  //   • two fingers → pinch-zoom, anchored so the layout point under the
+  //     finger-midpoint stays put (so pinch also pans naturally)
+  let pinching = false, pinchDist0 = 1, pinchZoom0 = 1, pinchLx = 0, pinchLy = 0;
+  function twoTouchInfo(evt) {
+    const rect = svg.getBoundingClientRect();
+    const a = evt.touches[0], b = evt.touches[1];
+    return {
+      cx: (a.clientX + b.clientX) / 2 - rect.left,
+      cy: (a.clientY + b.clientY) / 2 - rect.top,
+      dist: Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY) || 1,
+    };
+  }
+  function touchStart(evt) {
+    if (evt.touches && evt.touches.length >= 2) {
+      // Begin a pinch. Cancel any in-progress single-finger pan/marquee first.
+      panning = false;
+      marqueeing = false;
+      state.graphMarquee = null;
+      updateMarqueeSvg(svg);
+      svg.classList.remove("panning");
+      const info = twoTouchInfo(evt);
+      pinching = true;
+      pinchDist0 = info.dist;
+      pinchZoom0 = state.viewport.zoom;
+      // Layout point currently under the midpoint — kept fixed during the pinch.
+      pinchLx = (info.cx - state.viewport.panX) / state.viewport.zoom;
+      pinchLy = (info.cy - state.viewport.panY) / state.viewport.zoom;
+      evt.preventDefault();
+      return;
+    }
+    // Single finger → same rules as a left-mouse press (bg pans, node is left
+    // to setupDrag). panStart reads evt.touches[0] via svgPos.
+    panStart(evt);
+  }
+  function touchMove(evt) {
+    if (pinching && evt.touches && evt.touches.length >= 2) {
+      const info = twoTouchInfo(evt);
+      const newZoom = Math.max(0.1, Math.min(8, pinchZoom0 * (info.dist / pinchDist0)));
+      state.viewport.zoom = newZoom;
+      state.viewport.panX = info.cx - pinchLx * newZoom;
+      state.viewport.panY = info.cy - pinchLy * newZoom;
+      applyViewportTransform();
+      updateZoomReadout();
+      evt.preventDefault();
+      return;
+    }
+    if (pinching) return; // mid-pinch with a lifted finger — ignore until end
+    panMove(evt);
+  }
+  function touchEnd(evt) {
+    if (pinching) {
+      if (!evt.touches || evt.touches.length < 2) pinching = false;
+      // Don't hand the leftover finger straight into a pan — that would jump.
+      panning = false;
+      svg.classList.remove("panning");
+      return;
+    }
+    panEnd();
+  }
   svg.addEventListener("mousedown", panStart);
   window.addEventListener("mousemove", panMove);
   window.addEventListener("mouseup", panEnd);
   svg.addEventListener("wheel", wheelZoom, { passive: false });
+  svg.addEventListener("touchstart", touchStart, { passive: false });
+  window.addEventListener("touchmove", touchMove, { passive: false });
+  window.addEventListener("touchend", touchEnd);
+  window.addEventListener("touchcancel", touchEnd);
 }
 
 function toggleGraphSelection(name) {

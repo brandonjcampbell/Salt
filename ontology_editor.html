@@ -128,18 +128,57 @@ body[data-mode="pepper"] .summary-panel,
 body[data-mode="pepper"] #tab-content,
 body[data-mode="pepper"] .editor-tabs,
 body[data-mode="pepper"] .layer-switcher { display: none; }
-body[data-mode="pepper"] #pepper-panel { display: flex; }
+/* In pepper mode the salt-side panes (global-tree, tab-content, summary)
+ * all hide. Collapse editor-main's three-column grid down to one cell so
+ * pepper-panel takes the full viewport width instead of inheriting the
+ * 260px column that used to belong to the global tree. */
+body[data-mode="pepper"] .editor-main { grid-template-columns: minmax(0, 1fr); }
 
 #pepper-panel {
   display: none;
   flex: 1 1 auto;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px 20px;
-  overflow: auto;
+  min-width: 0;
+  min-height: 0;
   background: #1a1a1a;
   color: #e8e8e8;
   font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+/* Two-pane grid that lays out only when pepper mode is active. The cartridge
+ * (left) gets the bulk of the screen; the broker controls (compost / events /
+ * pending / query) stack on the right as a 380px sidebar. Each pane scrolls
+ * independently so a long event log never pushes the cartridge off-screen. */
+body[data-mode="pepper"] #pepper-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 16px;
+  padding: 16px 20px;
+  overflow: hidden;
+}
+.pepper-main {
+  overflow: auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pepper-main .pepper-section-cartridge {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+.pepper-main .pepper-cartridge-slot {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 16px 0;
+}
+.pepper-sidebar {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
 .pepper-section {
   background: rgba(255,255,255,0.04);
@@ -154,6 +193,12 @@ body[data-mode="pepper"] #pepper-panel { display: flex; }
   letter-spacing: 1.2px;
   text-transform: uppercase;
   color: rgba(255,255,255,0.55);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.pepper-section h3 code {
+  word-break: break-all;
+  white-space: normal;
 }
 .pepper-event-filters {
   display: flex;
@@ -207,6 +252,48 @@ body[data-mode="pepper"] #pepper-panel { display: flex; }
 .pepper-event-row[data-kind="ContextAdded"] .pe-kind { color: #b3a8d8; }
 .pepper-event-row[data-kind="Quiescent"]    .pe-kind { color: #d8a86a; }
 .pepper-event-row .pe-payload { color: rgba(255,255,255,0.78); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Compost — pepper-level setting that periodically removes outdated graph
+ * nodes (superseded Positions, resolved+succeeded Choices). Outdated means
+ * the node is no longer matched by any current pattern: a Position with an
+ * incoming UPDATES edge, a Choice with both CHOSE and THEN. The current
+ * head of each chain is preserved. Toggle for auto-compost-on-Quiescent
+ * plus a "compost now" button for manual passes. */
+.pepper-compost-section { gap: 6px; }
+.pepper-compost-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pepper-compost-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+  cursor: pointer;
+}
+.pepper-compost-toggle input { cursor: pointer; }
+#pepper-compost-now {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.85);
+  padding: 3px 10px;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+#pepper-compost-now:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.35); }
+.pepper-compost-stats {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.4;
+}
+.pepper-compost-stats.recent { color: #9bbd86; }
 
 .pepper-pending-empty {
   color: rgba(255,255,255,0.4);
@@ -341,6 +428,42 @@ body[data-mode="pepper"] #pepper-panel { display: flex; }
 }
 .pepper-cartridge-picker button:hover { background: rgba(255,255,255,0.28); }
 .pepper-cartridge-picker button:disabled { opacity: 0.4; cursor: not-allowed; }
+/* URL loader — single row, full width, sits between the picker and the slot.
+ * Lets the user pull a cartridge JS file from a gist (or any reachable URL)
+ * and execute it; the script is expected to call pepper.registerCartridge().
+ * Same dark-translucent palette as the picker for visual continuity. */
+.pepper-cartridge-loader {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  align-items: center;
+}
+.pepper-cartridge-loader input {
+  flex: 1 1 auto;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  padding: 5px 9px;
+  border-radius: 4px;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  min-width: 0;
+}
+.pepper-cartridge-loader input::placeholder { color: rgba(255,255,255,0.28); }
+.pepper-cartridge-loader input:focus { outline: none; border-color: rgba(255,255,255,0.35); }
+.pepper-cartridge-loader button {
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.pepper-cartridge-loader button:hover { background: rgba(255,255,255,0.28); }
+.pepper-cartridge-loader button:disabled { opacity: 0.4; cursor: not-allowed; }
 .pepper-cartridge-slot {
   min-height: 60px;
   background: rgba(0,0,0,0.25);
@@ -360,131 +483,11 @@ body[data-mode="pepper"] #pepper-panel { display: flex; }
   font-family: ui-monospace, monospace;
 }
 
-/* Tic-Tac-Toe cartridge — the first concrete example. Same dark-grey theme
- * as the rest of pepper, with cell marks in salt magenta (X) and content
- * olive (O) — a small visual nod to the layer accents the rest of the
- * editor uses. */
-.ttt-cartridge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  padding: 6px;
-}
-.ttt-status {
-  font-family: ui-monospace, monospace;
-  font-size: 13px;
-  color: rgba(255,255,255,0.85);
-  letter-spacing: 0.3px;
-}
-.ttt-status.winner { color: #ff5fa1; font-weight: 700; font-size: 15px; }
-.ttt-board {
-  display: grid;
-  grid-template-columns: repeat(3, 64px);
-  grid-template-rows: repeat(3, 64px);
-  gap: 4px;
-  background: rgba(255,255,255,0.05);
-  padding: 4px;
-  border-radius: 6px;
-}
-.ttt-cell {
-  background: rgba(0,0,0,0.4);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 4px;
-  font-family: ui-monospace, monospace;
-  font-size: 32px;
-  font-weight: 800;
-  color: rgba(255,255,255,0.85);
-  cursor: not-allowed;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.12s ease, border-color 0.12s ease;
-}
-.ttt-cell.offered {
-  cursor: pointer;
-  border-color: rgba(255,255,255,0.35);
-  background: rgba(255,255,255,0.05);
-}
-.ttt-cell.offered:hover {
-  background: rgba(255,0,111,0.15);
-  border-color: #ff006f;
-}
-.ttt-cell.mark-x { color: #ff5fa1; }
-.ttt-cell.mark-o { color: #b8c7a8; }
+/* Cartridge-specific styles. The editor ships with NO built-in cartridges;
+ * load cartridges via the pepper-panel "load URL" input. Each cartridge file
+ * is responsible for injecting its own styles into <head> on load (see
+ * tetris.cartridge.js and tictactoe.cartridge.js for the canonical pattern). */
 
-/* Tic-Tac-Toe Reader cartridge — read-only inspector. Shows players, board,
- * every winning line with its current marks, move history, and triple
- * counts. All driven through pepper.query — no notifyInput, no buttons.
- * Cartridges can be observers, not only interactors. */
-.tttr-cartridge {
-  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  font-size: 12px;
-  color: rgba(255,255,255,0.85);
-}
-.tttr-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.tttr-section { background: rgba(255,255,255,0.04); border-radius: 4px; padding: 10px 12px; }
-.tttr-section h4 {
-  margin: 0 0 8px 0;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.5);
-}
-.tttr-section.tttr-lines,
-.tttr-section.tttr-history { grid-column: 1 / -1; }
-.tttr-row { padding: 2px 0; line-height: 1.6; }
-.tttr-row.winner { color: #ff5fa1; font-weight: 700; }
-.tttr-row.tttr-empty { color: rgba(255,255,255,0.35); font-style: italic; }
-.tttr-mark { display: inline-block; min-width: 12px; text-align: center; font-weight: 800; }
-.tttr-mark.mark-x { color: #ff5fa1; }
-.tttr-mark.mark-o { color: #b8c7a8; }
-.tttr-mark.mark- { color: rgba(255,255,255,0.25); }
-.tttr-pre {
-  margin: 0;
-  font-family: inherit;
-  font-size: 13px;
-  line-height: 1.4;
-  color: rgba(255,255,255,0.92);
-  text-align: center;
-  white-space: pre;
-}
-.tttr-lines-table { display: flex; flex-direction: column; gap: 3px; }
-.tttr-line {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 12px;
-  padding: 3px 6px;
-  border-radius: 3px;
-  background: rgba(0,0,0,0.2);
-}
-.tttr-line.win { background: rgba(255,0,111,0.18); }
-.tttr-line-marks { font-size: 13px; letter-spacing: 4px; }
-.tttr-line-cells { color: rgba(255,255,255,0.55); font-size: 11px; }
-.tttr-win-mark {
-  background: #ff006f;
-  color: #fff;
-  padding: 1px 6px;
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  border-radius: 3px;
-}
-.tttr-move {
-  display: grid;
-  grid-template-columns: 32px 16px 80px 1fr;
-  gap: 8px;
-  align-items: baseline;
-}
-.tttr-move-num { color: rgba(255,255,255,0.4); }
-.tttr-move-cell { color: rgba(255,255,255,0.9); }
-.tttr-move-meta { color: rgba(255,255,255,0.45); font-size: 11px; }
 header.top .editor-tabs {
   flex: 1 1 auto;
   border-bottom: none;
@@ -4323,6 +4326,188 @@ main:has(.tab-content.graph-active) {
   color: #4A4548;
 }
 .form-hint.sig-active code { background: rgba(255,255,255,0.6); }
+
+/* Render-cap notice — appears pinned to the top of the graph view when the
+ * configured node/edge caps clip the visible set. Subtle but visible so a
+ * user dropping into a huge bundle isn't confused why most of it is missing. */
+.graph-view { position: relative; }
+.graph-cap-notice {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  background: rgba(255, 248, 230, 0.96);
+  border: 1px solid #E0D7C2;
+  border-left: 3px solid #B0823A;
+  padding: 0.35rem 0.7rem;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: #6E5A30;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.graph-cap-notice .clipped { color: #B0823A; font-weight: 600; }
+.graph-cap-notice .hint { color: #9A8B70; margin-left: 0.4rem; font-weight: 400; }
+
+/* Docs button + overlay. Visible in BOTH salt and pepper modes because the
+ * documentation is reference, not workspace — it shouldn't disappear when
+ * you flip roles. Lives in the header next to the layer switcher (or alone
+ * in pepper mode where the switcher is hidden). Clicking opens a fullscreen
+ * overlay; clicking the close button or the backdrop dismisses it. */
+.docs-toggle {
+  background: transparent;
+  border: 1px solid #CBC6C1;
+  color: #6E6868;
+  padding: 0.3rem 0.7rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  flex: 0 0 auto;
+}
+.docs-toggle:hover { color: #2A2628; border-color: #2A2628; }
+body[data-mode="pepper"] .docs-toggle {
+  border-color: #555050;
+  color: #3a3a3a;
+}
+body[data-mode="pepper"] .docs-toggle:hover { color: #000; border-color: #000; }
+
+#docs-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 20, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 200;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 5vh 5vw;
+  overflow-y: auto;
+}
+#docs-overlay.open { display: flex; }
+.docs-panel {
+  background: #FAF8F5;
+  color: #2A2628;
+  border-radius: 8px;
+  border: 1px solid #CBC6C1;
+  max-width: 920px;
+  width: 100%;
+  padding: 2.5rem 3rem;
+  position: relative;
+  box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+  font-family: 'Spectral', Georgia, serif;
+  font-size: 15.5px;
+  line-height: 1.62;
+}
+.docs-panel h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.45rem;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.4rem;
+  color: #ff006f;
+}
+.docs-panel h1 .sub {
+  display: block;
+  font-family: 'Spectral', serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  color: #6E6868;
+  margin-top: 0.15rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.docs-panel h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.92rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #5B6957;
+  margin: 2.2rem 0 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid #DDE3D7;
+}
+.docs-panel h3 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6E6868;
+  margin: 1.4rem 0 0.35rem;
+}
+.docs-panel p { margin: 0 0 0.85rem; }
+.docs-panel code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.86em;
+  background: #ECE7E0;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  color: #4A4548;
+}
+.docs-panel pre {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  background: #2A2628;
+  color: #DDE3D7;
+  padding: 0.85rem 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  line-height: 1.55;
+  margin: 0.6rem 0 1rem;
+}
+.docs-panel pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+.docs-panel .docs-good,
+.docs-panel .docs-bad {
+  padding: 0.7rem 1rem;
+  border-radius: 4px;
+  margin: 0.7rem 0;
+  border-left: 3px solid;
+}
+.docs-panel .docs-good {
+  background: rgba(126,140,118,0.10);
+  border-left-color: #7E8C76;
+}
+.docs-panel .docs-bad {
+  background: rgba(255,0,111,0.06);
+  border-left-color: #ff006f;
+}
+.docs-panel .docs-good::before,
+.docs-panel .docs-bad::before {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+.docs-panel .docs-good::before { content: "do"; color: #5B6957; }
+.docs-panel .docs-bad::before  { content: "avoid"; color: #ff006f; }
+.docs-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 1.1rem;
+  background: transparent;
+  border: none;
+  color: #6E6868;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+.docs-close:hover { color: #ff006f; background: #ECE7E0; }
 </style>
 </head>
 <body>
@@ -4377,7 +4562,119 @@ main:has(.tab-content.graph-active) {
     <button type="button" class="lswitch" data-layer="rule">Rule</button>
     <button type="button" class="lswitch" data-layer="content">Content</button>
   </div>
+  <button type="button" class="docs-toggle" id="docs-toggle" title="open documentation">docs</button>
 </header>
+
+<!--
+  Documentation overlay. Visible in BOTH salt and pepper modes because the
+  docs are reference, not workspace. Opened by the `docs` button in the
+  header; closed by the × button or by clicking the dimmed backdrop.
+  Content is static HTML — no graph reads, no salt awareness — so it stays
+  legible whether or not a bundle is loaded.
+-->
+<div id="docs-overlay" role="dialog" aria-label="documentation" aria-modal="true">
+  <article class="docs-panel">
+    <button type="button" class="docs-close" id="docs-close" aria-label="close documentation">×</button>
+    <h1>ontology editor<span class="sub">salt writes the rules, pepper brokers the inputs, the artifact holds the truth</span></h1>
+
+    <h2>The model</h2>
+    <p>Everything in the editor is one of three primitives. <code>Concept</code> is a named node — a noun the ontology can refer to. <code>Context</code> is a directed triple <code>subject → predicate → target</code>; the predicate is itself a Concept, so the graph is reflective. <code>Pattern</code> is a body of triples used by an <code>Implication</code>: an <code>OF</code> pattern matches the current artifact, a <code>GENERATES</code> pattern materializes new triples when the match fires. Match → fire → mutate → re-match, until quiescent.</p>
+    <p>Type membership lives in the artifact, not on objects. A concept is a <code>Block</code> because some <code>IS</code> triple says so. <code>isA</code> walks <code>IS</code> edges transitively; there is no separate type registry. This is what lets a rule like <code>c:Choice CHOSE o:Option → o IS Chosen</code> actually change what queries see — the type query reads the same edges the rule just wrote.</p>
+
+    <h2>Layers</h2>
+    <p>Every Concept and Context lives in one of four layers. <code>bundle</code> is the imported schema you got for free — read-only, deleted only by un-importing the bundle as a unit. <code>rule</code> is your authored schema: predicates, types, implications you wrote yourself. <code>content</code> is the dataset — facts about the world. <code>runtime</code> is disposable: positions minted by gravity, choices minted by NextStep, anything the engine produced and the engine can throw away. Compost only touches runtime.</p>
+
+    <h2>Salt: writing rules</h2>
+    <p>An implication is a pair of patterns. The OF body is the precondition expressed as triples; the GEN body is the consequence. The matcher binds typed variables (<code>p:Position</code> means "any concept that <code>isA</code> Position") to live concepts, applies <code>NOT</code> and <code>NEQ</code> filters, and returns every binding that satisfies the whole body. The GEN body then materializes its triples with the variables substituted. <code>MINT v:Type</code> in the GEN body asks for a fresh concept named <code>Type<i>N</i></code>, registered as the variable for this one fire.</p>
+    <pre><code>// "When a falling position has empty south, mint a new position one cell south."
+Tetris_StepDownOf:                Tetris_StepDownGen:
+  step:Choice IS Step               MINT next:Position
+  step:Choice CHOSE Down            next FOR     b:Block
+  p:Position FOR b:Block            next AT_CELL south:Tile
+  p AT_CELL  c:Tile                 next UPDATES p:Position
+  NOT newer:Position UPDATES p
+  south:Tile SOUTH-OF c</code></pre>
+    <p>The rule fires once per matching binding per pass. <code>fireToQuiescence</code> keeps running passes until a pass adds nothing new, capped at five passes and 200 new concepts to bound runaway rules in self-similar ontologies. Rules can't accidentally infinitely cascade — the budget catches it; reach the cap and a warning appears in the log.</p>
+
+    <h2>Pepper: brokering inputs</h2>
+    <p>Salt is pure: rules can't ask "what should happen next." When the artifact needs the outside world to pick something, it mints a <code>Choice</code> with <code>OF</code> options. The fulfillment is a single edge: <code>choice CHOSE option</code>. Pepper enforces the contract — <code>pepper.notifyInput(choice, value)</code> validates that <code>choice IS Choice</code>, that <code>value</code> appears in its <code>OF</code> options, and that no prior <code>CHOSE</code> exists, then writes the triple. The rules downstream see <code>CHOSE</code> and cascade.</p>
+    <p>The pepper panel (right sidebar in pepper mode) is itself just a subscriber. It uses only <code>notifyInput</code>, <code>query</code>, <code>pendingInputs</code>, <code>subscribe</code> — exactly the API a remote consumer would have. Same UI works against an out-of-process artifact behind a WebSocket. <em>Pepper is a role, not a layer</em>.</p>
+
+    <h2>Cartridges</h2>
+    <p>A cartridge is a specialized pepper UI for a specific bundle — Tetris, Tic-Tac-Toe, others. It mounts in pepper mode, owns the main canvas, and talks to the artifact ONLY through the pepper passed to it. Subscribe to <code>Quiescent</code> for fixpoint re-renders, <code>ContextAdded</code> for incremental updates. Write only via <code>pep.notifyInput</code>. Never reach into <code>state.graph</code> for state input — that bypasses the validation. (Cartridges may still call <code>state.graph.addContext</code> for pure annotation, like <code>ensureShapes</code> minting tetromino extras, but never to fulfill a Choice.)</p>
+
+    <h2>Compost</h2>
+    <p>Long-running play accumulates runtime junk: superseded Positions whose successor exists, resolved Choices that already have a <code>CHOSE</code> and a <code>THEN</code> successor. Compost sweeps both, plus every triple touching the removed concept. Toggled in the pepper panel; on by default for Tetris because hundreds of steps each leave four superseded Positions behind. Compost never schedules a fire (removal doesn't trigger the auto-fire hook) so it's a pure shrink — no cascade. When composting a middle link in a THEN chain, compost rewires the chain (predecessor → successor) so a bundle-layer head doesn't lose its successor and re-fire.</p>
+
+    <h2>Good patterns</h2>
+
+    <div class="docs-good">
+      <h3>Ontology is canonical, runtime is disposable, runner is dumb</h3>
+      <p>The artifact is the source of truth. Anything you can derive from triples should be derived, not cached. The runner has no opinions — it matches patterns and fires. If a behavior isn't expressible as "given these triples, materialize these triples," it doesn't belong in a rule. <em>Why:</em> debugging is grep-the-artifact. There's nowhere for stale state to hide.</p>
+    </div>
+
+    <div class="docs-good">
+      <h3>Current-state via <code>FOR + AT_CELL + NOT newer UPDATES</code></h3>
+      <p>Don't mutate position triples in place — mint a new position with <code>UPDATES</code> pointing at the old one. The current state is "every Position with no successor." This is the additive Position+UPDATES model: history is preserved, queries are local, compost is mechanical. <em>Why:</em> mutation is a debug-time enemy; a position chain you can walk lets you see every step the block took.</p>
+    </div>
+
+    <div class="docs-good">
+      <h3>Bundle for structure, runtime for state</h3>
+      <p>Cells, Rows, SOUTH-OF — bundle layer. Positions, Choices, FullRow stamps — runtime layer. The bundle survives compost; runtime gets cleaned. <em>Why:</em> the topology of the board never changes, so it should never have to be re-derived. The state of the board changes every tick, so it should be cheap to throw away.</p>
+    </div>
+
+    <div class="docs-good">
+      <h3>Pepper-only writes for input</h3>
+      <p>Any time the outside world makes a choice — a key press, a click, an actuator — go through <code>pep.notifyInput</code>. Don't write the <code>CHOSE</code> triple directly. <em>Why:</em> the pepper validation is the contract. Bypass it once and you can <code>CHOSE</code> a value that isn't in <code>OF</code>, or double-resolve a Choice, or fulfill something that isn't a Choice at all. The bug appears later, far from the bypass.</p>
+    </div>
+
+    <div class="docs-good">
+      <h3>Quiescent over per-edge</h3>
+      <p>For UI that renders the artifact's state, subscribe to <code>Quiescent</code> and render the whole view. Don't subscribe to <code>ContextAdded</code> and try to diff. <em>Why:</em> rules fire many edges per pass; a partial render between them shows torn states. Quiescent is the only event where the artifact is internally consistent.</p>
+    </div>
+
+    <h2>Antipatterns</h2>
+
+    <div class="docs-bad">
+      <h3>Multi-hop traversal in a single rule body</h3>
+      <p>If your rule needs "any cell two-or-more rows above the cleared row," writing <code>row1 ROW_ABOVE row2, row2 ROW_ABOVE row3</code> in one OF body only matches a fixed distance. Each rule fires once per binding per pass; salt doesn't do transitive closure. <em>Why this fails:</em> in Tetris, single-hop ShiftAbove meant cells one row above a cleared row dropped, but cells two-plus rows up never moved. Floaters everywhere. Fix is either to express the cascade as a single cartridge-side computation, or seed a transitive predicate at bundle time.</p>
+    </div>
+
+    <div class="docs-bad">
+      <h3>Bundle-layer concept as a chain head, runtime successor as the next link</h3>
+      <p>Tetris seeds <code>Spawn_0</code> (bundle) → <code>Choice2</code> (runtime, minted by NextSpawn) → <code>Choice_X</code> (also runtime). When Choice2 gets composted, every triple touching it disappears, including <code>Spawn_0 THEN Choice2</code>. Spawn_0 is preserved (bundle), still has its <code>CHOSE Cell_0_7</code>, and no longer has a THEN successor — so the rule guard <code>NOT spawn THEN nxt</code> opens back up. Tetris_Spawn re-fires. A new block appears at Cell_0_7 on top of the still-falling current block. <em>Why this fails:</em> the bundle/runtime boundary is asymmetric in cleanup. Fix: compost rewires the THEN chain on removal (predecessor THEN composted-link's successor). Or: don't make the chain head a bundle concept; mint it at runtime.</p>
+    </div>
+
+    <div class="docs-bad">
+      <h3>Skipping the <code>NOT newer UPDATES p</code> guard</h3>
+      <p>The <code>at_cell</code> pattern is <em>three</em> triples: <code>p FOR b, p AT_CELL c, NOT newer UPDATES p</code>. Drop the NOT and you match every historical position the block ever had. Gravity then moves all of them — past, present, and ghost — and the block "stretches" into a streak. <em>Why this fails:</em> the additive model keeps history precisely because nothing rewrites; the cost is that every "current" query must explicitly say "no successor."</p>
+    </div>
+
+    <div class="docs-bad">
+      <h3>Cell-by-cell rule bodies on a large grid</h3>
+      <p>Writing a full-row detector as "N distinct cells in the same row with all-different bindings" is N! search work for the matcher. On a 15-wide grid that's already 1.3 trillion combinations to enumerate per pass. <em>Why this fails:</em> the matcher is brute-force across bindings; there's no row-aware index. Do scans like this in the cartridge with an occupancy map. Salt is for "given a specific local triple pattern, what follows" — not for aggregate queries over the whole board.</p>
+    </div>
+
+    <div class="docs-bad">
+      <h3>Direct graph mutation from a cartridge to fulfill input</h3>
+      <p>Calling <code>state.graph.addContext("CHOSE", choice, value)</code> from cartridge code instead of <code>pep.notifyInput(choice, value)</code> works — once, with no validation. Then you find yourself debugging why an already-resolved Choice is firing twice, or why a value that isn't in the OF options is being processed. <em>Why this fails:</em> pepper is the broker because the artifact alone can't tell a legitimate input from a bypass. The validation is the difference.</p>
+    </div>
+
+    <div class="docs-bad">
+      <h3>Closures over <code>state.graph</code> across re-mounts</h3>
+      <p>If a cartridge mount captures <code>const g = state.graph</code> and then the graph is replaced (file load, mode switch, etc.), the cartridge holds a reference to the old graph. Writes go to a graph nobody reads. <em>Why this fails:</em> <code>state.graph</code> is the indirection — always reach through <code>state</code>, never cache. Or pass <code>pep</code> down and use <code>pep.query</code>, which always reads the live graph.</p>
+    </div>
+
+    <div class="docs-bad">
+      <h3>Reading <code>concept.types</code> directly</h3>
+      <p>The Concept object's <code>types</code> array is a denormalized hint set at construction time. The truth is the IS triples in the artifact. If a rule fires <code>c IS Chosen</code> at runtime, <code>concept.types</code> still says <code>["Option"]</code>, but <code>isA(c, "Chosen")</code> returns true via the IS edge. Code that reads <code>.types</code> sees a stale view. <em>Why this fails:</em> the artifact is the truth; the object is the cache. Always go through <code>isA</code>.</p>
+    </div>
+
+    <h2>The short version</h2>
+    <p>Write rules as if the artifact is going to be inspected with grep, because that's how it gets debugged. Make state additive — supersede, don't mutate. Push aggregate queries to the cartridge; keep rules local. Funnel every input through pepper. Compost runtime, preserve bundle. When something behaves strangely, walk the position chain — the answer is in the triples.</p>
+
+  </article>
+</div>
 
 <!-- Cypher bar is now rendered inside the graph workspace topbar (see renderGraph). -->
 
@@ -4386,48 +4683,67 @@ main:has(.tab-content.graph-active) {
   <section class="tab-content" id="tab-content"></section>
   <aside class="summary-panel" id="summary-panel"></aside>
   <!--
-    Pepper's workspace. Visible only when body[data-mode="pepper"]. Three
-    sections expose the broker's API:
-      - Events:  live event stream from pepper.subscribe("*")
-      - Pending: every unfulfilled Choice, click an option to call
-                 pepper.notifyInput(choice, option)
-      - Query:   three-field form for pepper.query(subject, ctx, target)
+    Pepper's workspace. Visible only when body[data-mode="pepper"]. Two-pane
+    grid: the cartridge owns the main area (it IS the game, so it gets the
+    room to render), and the broker controls/diagnostics live in a sidebar
+    on the right.
+      Main:    cartridge — pepper.runCartridge(id) mounts the specialized UI
+      Sidebar: compost · events · pending · query (top→bottom)
   -->
   <div id="pepper-panel" aria-label="pepper broker workspace">
-    <div class="pepper-section">
-      <h3>events</h3>
-      <div class="pepper-event-filters">
-        <button type="button" data-pf="all" class="on">all</button>
-        <button type="button" data-pf="ConceptAdded">concepts</button>
-        <button type="button" data-pf="ContextAdded">contexts</button>
-        <button type="button" data-pf="Quiescent">quiescent</button>
-        <button type="button" id="pepper-events-clear" style="margin-left:auto">clear</button>
+    <div class="pepper-main">
+      <div class="pepper-section pepper-section-cartridge">
+        <h3>cartridge · <code style="font-weight:400;text-transform:none;font-size:11px;color:rgba(255,255,255,0.5)">pepper.runCartridge(id)</code></h3>
+        <div class="pepper-cartridge-picker">
+          <select id="pepper-cartridge-select" aria-label="cartridge"></select>
+          <button type="button" id="pepper-cartridge-run">load</button>
+          <button type="button" id="pepper-cartridge-stop">stop</button>
+        </div>
+        <div class="pepper-cartridge-loader" title="load a cartridge from a remote URL (e.g. a GitHub gist raw URL). The script runs in the page's global context and is expected to call pepper.registerCartridge() — same shape as the built-ins. Cartridge id collides with built-ins overwrite them for the session; refresh to restore the in-file version.">
+          <input type="text" id="pepper-cartridge-url" placeholder="https://gist.githubusercontent.com/.../raw/tetris.cartridge.js" autocomplete="url" spellcheck="false">
+          <button type="button" id="pepper-cartridge-load-url">load URL</button>
+        </div>
+        <div class="pepper-cartridge-slot" id="pepper-cartridge-slot"></div>
+        <div class="pepper-cartridge-meta" id="pepper-cartridge-meta"></div>
       </div>
-      <div class="pepper-event-log" id="pepper-event-log"></div>
     </div>
-    <div class="pepper-section">
-      <h3>pending inputs · <code style="font-weight:400;text-transform:none;font-size:11px;color:rgba(255,255,255,0.5)">pepper.notifyInput(target, value)</code></h3>
-      <div id="pepper-pending"></div>
-    </div>
-    <div class="pepper-section">
-      <h3>cartridge · <code style="font-weight:400;text-transform:none;font-size:11px;color:rgba(255,255,255,0.5)">pepper.runCartridge(id)</code></h3>
-      <div class="pepper-cartridge-picker">
-        <select id="pepper-cartridge-select" aria-label="cartridge"></select>
-        <button type="button" id="pepper-cartridge-run">load</button>
-        <button type="button" id="pepper-cartridge-stop">stop</button>
+    <div class="pepper-sidebar">
+      <div class="pepper-section pepper-compost-section">
+        <h3>compost · <code style="font-weight:400;text-transform:none;font-size:11px;color:rgba(255,255,255,0.5)">pepper.compost()</code></h3>
+        <div class="pepper-compost-controls">
+          <label class="pepper-compost-toggle">
+            <input type="checkbox" id="pepper-compost-enabled">
+            <span>auto-compost after each fire</span>
+          </label>
+          <button type="button" id="pepper-compost-now">compost now</button>
+        </div>
+        <div class="pepper-compost-stats" id="pepper-compost-stats">superseded Positions and resolved Choices with a successor get composted — concept + all touching triples removed. Current Positions and pending Choices are preserved.</div>
       </div>
-      <div class="pepper-cartridge-slot" id="pepper-cartridge-slot"></div>
-      <div class="pepper-cartridge-meta" id="pepper-cartridge-meta"></div>
-    </div>
-    <div class="pepper-section">
-      <h3>query · <code style="font-weight:400;text-transform:none;font-size:11px;color:rgba(255,255,255,0.5)">pepper.query(subject, context, target)</code></h3>
-      <div class="pepper-query-form">
-        <input id="pq-s" placeholder="subject (blank = any)" autocomplete="off">
-        <input id="pq-c" placeholder="context name (blank = any)" autocomplete="off">
-        <input id="pq-t" placeholder="target (blank = any)" autocomplete="off">
-        <button type="button" id="pq-run">query</button>
+      <div class="pepper-section">
+        <h3>events</h3>
+        <div class="pepper-event-filters">
+          <button type="button" data-pf="all" class="on">all</button>
+          <button type="button" data-pf="ConceptAdded">concepts</button>
+          <button type="button" data-pf="ContextAdded">contexts</button>
+          <button type="button" data-pf="Quiescent">quiescent</button>
+          <button type="button" id="pepper-events-clear" style="margin-left:auto">clear</button>
+        </div>
+        <div class="pepper-event-log" id="pepper-event-log"></div>
       </div>
-      <div class="pepper-query-results" id="pepper-query-results"></div>
+      <div class="pepper-section">
+        <h3>pending inputs · <code style="font-weight:400;text-transform:none;font-size:11px;color:rgba(255,255,255,0.5)">pepper.notifyInput(target, value)</code></h3>
+        <div id="pepper-pending"></div>
+      </div>
+      <div class="pepper-section">
+        <h3>query · <code style="font-weight:400;text-transform:none;font-size:11px;color:rgba(255,255,255,0.5)">pepper.query(subject, context, target)</code></h3>
+        <div class="pepper-query-form">
+          <input id="pq-s" placeholder="subject (blank = any)" autocomplete="off">
+          <input id="pq-c" placeholder="context name (blank = any)" autocomplete="off">
+          <input id="pq-t" placeholder="target (blank = any)" autocomplete="off">
+          <button type="button" id="pq-run">query</button>
+        </div>
+        <div class="pepper-query-results" id="pepper-query-results"></div>
+      </div>
     </div>
   </div>
 </main>
@@ -4555,6 +4871,69 @@ const pepper = {
   },
 
   // -------------------------------------------------------------------------
+  // COMPOST — periodic GC of outdated graph nodes
+  // -------------------------------------------------------------------------
+  // The additive Position+UPDATES model never mutates: every move mints a new
+  // node and supersedes the old via an UPDATES edge. Same shape for resolved
+  // Choices that have been THEN'd by a successor. Over time the graph grows
+  // linearly with history — each block carries a chain of all its past
+  // positions, each completed turn carries a chain of all past choices.
+  // Compost removes the parts that no current pattern matches:
+  //   - any Position with an incoming UPDATES edge (a successor exists, so
+  //     the at_cell pattern's NOT-newer-UPDATES check excludes it)
+  //   - any Choice with both an outgoing CHOSE (resolved) AND an outgoing
+  //     THEN (the chain has moved on, so the cartridge / next-rule guards
+  //     never read it again)
+  // Heads of each chain are preserved — the current Position of a block,
+  // the latest Choice in a THEN chain. Compostable nodes are removed along
+  // with every triple that touches them (subject OR target).
+  //
+  // Compost runs only when explicitly invoked (via this method or the
+  // auto-compost-on-Quiescent toggle in the pepper panel). It never fires
+  // rules — removeContext doesn't schedule, so the graph just shrinks.
+  compost() {
+    if (!state || !state.graph) return { removed: 0, positions: 0, choices: 0 };
+    const g = state.graph;
+    const compostablePositions = [];
+    const compostableChoices   = [];
+    for (const c of g.concepts.values()) {
+      if (c.layer !== "runtime") continue;
+      if (g.isA(c.name, "Position")) {
+        if (g.contextsTo(c.name, "UPDATES").length > 0) compostablePositions.push(c.name);
+      } else if (g.isA(c.name, "Choice")) {
+        const hasChose = g.contextsFrom(c.name, "CHOSE").length > 0;
+        const hasThen  = g.contextsFrom(c.name, "THEN").length > 0;
+        if (hasChose && hasThen) compostableChoices.push(c.name);
+      }
+    }
+    const remove = (name) => {
+      const touching = g.contexts.filter(ctx => ctx.subject === name || ctx.target === name);
+      // Rewire THEN chains. If X sits between Y → X → Z and only X is being
+      // composted, add Y THEN Z so the chain stays connected. Without this,
+      // bundle-layer chain heads (Tetris's Spawn_0) lose their THEN successor
+      // when the first runtime Choice is composted, then re-match every
+      // rule whose guard is `NOT subject THEN nxt` — re-firing Spawn and
+      // re-minting a new Block at the same cell.
+      const pred = touching.find(ctx => ctx.name === "THEN" && ctx.target === name);
+      const succ = touching.find(ctx => ctx.name === "THEN" && ctx.subject === name);
+      if (pred && succ) {
+        g.addContext("THEN", pred.subject, succ.target, "runtime");
+      }
+      for (const ctx of touching) g.removeContext(ctx);
+      g.removeConcept(name);
+    };
+    for (const name of compostablePositions) remove(name);
+    for (const name of compostableChoices)   remove(name);
+    const stats = {
+      removed: compostablePositions.length + compostableChoices.length,
+      positions: compostablePositions.length,
+      choices: compostableChoices.length,
+    };
+    pepper.emit("Composted", stats);
+    return stats;
+  },
+
+  // -------------------------------------------------------------------------
   // CARTRIDGE RUNTIME — pepper hosts specialized UIs
   // -------------------------------------------------------------------------
   // A cartridge is a small object:
@@ -4615,6 +4994,31 @@ const pepper = {
   },
   registerCartridge(id, def) {
     if (!id || !def || typeof def.mount !== "function") return false;
+    // Embedded bundle support: a cartridge may carry its own ontology bundle
+    // inline via `def.bundle`. On registration we splice that bundle into
+    // PATTERN_LIBRARY so the rest of the editor (import pipeline, ensureBundle,
+    // dependsOn resolution, the bundle picker) sees it as a first-class
+    // bundle. If a bundle with the same id already exists, the embedded
+    // version REPLACES it — this is the "cartridge ships its own bundle"
+    // path; the most recent registration wins. If the cartridge doesn't
+    // explicitly set requiredBundle, default it to the embedded bundle's id
+    // so runCartridge's ensureBundle call has something to look up.
+    if (def.bundle && def.bundle.id && typeof PATTERN_LIBRARY !== "undefined") {
+      const existingIdx = PATTERN_LIBRARY.findIndex(b => b.id === def.bundle.id);
+      if (existingIdx >= 0) {
+        PATTERN_LIBRARY[existingIdx] = def.bundle;
+      } else {
+        PATTERN_LIBRARY.push(def.bundle);
+      }
+      // If the bundle was previously imported as a different version, drop
+      // it from importedBundles so ensureBundle re-imports the embedded one.
+      if (typeof state !== "undefined" && state.importedBundles) {
+        state.importedBundles.delete(def.bundle.id);
+      }
+      if (!def.requiredBundle) {
+        def.requiredBundle = def.bundle.id;
+      }
+    }
     this.cartridges.set(id, def);
     // Let the picker know there's a new option (if the panel is wired).
     if (typeof pepperPanel !== "undefined" && pepperPanel.refreshCartridges) {
@@ -4669,6 +5073,154 @@ const pepper = {
     const meta = document.getElementById("pepper-cartridge-meta");
     if (meta) meta.textContent = "";
   },
+  // Load a cartridge from a remote URL. The fetched JS is appended as a
+  // <script> tag, which means it runs in the page's global lexical scope
+  // and can reach `pepper`, `state.graph`, etc. directly — same as the
+  // in-file cartridges below. The script is expected to call
+  // pepper.registerCartridge(id, def) on execution; once it does, the
+  // picker auto-refreshes (registerCartridge triggers it) and the new
+  // cartridge becomes selectable from the dropdown.
+  //
+  // <script src> bypasses fetch's CORS preflight, so this works from
+  // file:// origins (Brandon's typical setup) against https://gist...
+  // raw URLs. A cache-bust query param is appended so updates to the
+  // source file are picked up on re-load instead of being served from
+  // the browser's script cache.
+  //
+  // Returns a Promise that resolves with the cartridge id (if discoverable)
+  // or undefined, and rejects on network/parse failure.
+  loadCartridgeFromURL(url) {
+    return new Promise((resolve, reject) => {
+      if (!url || typeof url !== "string") {
+        reject(new Error("URL is required"));
+        return;
+      }
+      const meta = document.getElementById("pepper-cartridge-meta");
+      if (meta) meta.textContent = `loading ${url}…`;
+      // Monkey-patch registerCartridge briefly so we can tell which ids the
+      // remote script contributed. Without this, an overwrite of an existing
+      // id (e.g. the URL ships an updated "tetris") would look like nothing
+      // got registered. We restore the original method as soon as the script
+      // load completes (success or failure).
+      const registered = [];
+      const orig = this.registerCartridge;
+      const self = this;
+      const patchRegister = () => {
+        self.registerCartridge = function(id, def) {
+          registered.push(id);
+          return orig.call(self, id, def);
+        };
+      };
+      const unpatchRegister = () => { self.registerCartridge = orig; };
+      patchRegister();
+      // Capture runtime errors from the loaded script. Without
+      // crossOrigin="anonymous" the browser anonymizes cross-origin script
+      // errors to "Script error" — opaque. Setting it (and the host's
+      // Access-Control-Allow-Origin: * header) lets the real error message,
+      // line, and column through.
+      let scriptError = null;
+      const cleanScriptSrc = (s) => s ? s.split("?")[0] : s;
+      const errorHandler = (e) => {
+        if (e.filename && cleanScriptSrc(e.filename) === cleanScriptSrc(script.src)) {
+          scriptError = {
+            message: e.message || "unknown error",
+            line: e.lineno,
+            col: e.colno,
+          };
+        }
+      };
+      window.addEventListener("error", errorHandler);
+      const cleanup = () => {
+        unpatchRegister();
+        window.removeEventListener("error", errorHandler);
+      };
+      // Helper for the fetch-fallback path. GitHub gists serve every file as
+      // text/plain + nosniff regardless of extension, which blocks
+      // <script src> from executing them. fetch+eval bypasses the script-MIME
+      // check (we're loading text and explicitly executing it). The catch:
+      // fetch from a file:// editor origin to https:// is blocked by the
+      // browser even with permissive CORS, so this only helps when the editor
+      // is served over http(s). If both paths fail, the catch arm gives the
+      // user a remediation path: host the script via jsDelivr (which serves
+      // GitHub-repo files with application/javascript so <script src> works
+      // from anywhere).
+      const tryFetchFallback = () => {
+        return fetch(url).then(response => {
+          if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
+          return response.text();
+        }).then(code => {
+          patchRegister();
+          try {
+            (0, eval)(code); // indirect eval — runs in global scope, sees `pepper`, `state`, etc.
+          } finally {
+            unpatchRegister();
+          }
+          return true;
+        });
+      };
+      const finish = (viaFetch) => {
+        cleanup();
+        if (scriptError) {
+          const m = `script error: ${scriptError.message}` +
+            (scriptError.line ? ` (line ${scriptError.line}:${scriptError.col})` : "");
+          if (meta) meta.textContent = m;
+          reject(new Error(m));
+          return;
+        }
+        if (registered.length === 0) {
+          const m = `URL loaded but no pepper.registerCartridge() call was made. ` +
+            `Check the script calls pepper.registerCartridge(id, def) — and that the URL ` +
+            `is the raw file (not an HTML page wrapping it).`;
+          if (meta) meta.textContent = m;
+          resolve([]);
+          return;
+        }
+        // Auto-mount the first cartridge registered by the URL — without this
+        // the user has to (a) realize registration ≠ mounting, (b) find the
+        // cartridge in the dropdown, (c) click load. Most of the time they
+        // want to immediately see the cartridge they just loaded; if they
+        // wanted to register quietly they wouldn't have hit "load URL".
+        // runCartridge handles stopping any existing active cartridge so this
+        // is safe even when the loaded id overlaps the currently-mounted one.
+        const sel = document.getElementById("pepper-cartridge-select");
+        if (sel) sel.value = registered[0];
+        const via = viaFetch ? " (via fetch fallback)" : "";
+        if (meta) meta.textContent = `registered ${registered.join(", ")}${via} — mounting…`;
+        self.runCartridge(registered[0]);
+        resolve(registered);
+      };
+      const script = document.createElement("script");
+      script.crossOrigin = "anonymous";
+      const sep = url.includes("?") ? "&" : "?";
+      script.src = url + sep + "_t=" + Date.now();
+      script.async = true;
+      script.onload = () => {
+        script.remove();
+        finish(false);
+      };
+      script.onerror = () => {
+        script.remove();
+        // <script src> failed — most often because the server sent a non-JS
+        // content-type with X-Content-Type-Options: nosniff (gist.github.com
+        // does this for every file). Try fetch+eval as a fallback.
+        tryFetchFallback().then(
+          () => finish(true),
+          (fetchErr) => {
+            cleanup();
+            const msg = `failed to load ${url}.\n` +
+              `<script src> blocked (likely a content-type/nosniff mismatch — common with GitHub gists, which serve text/plain).\n` +
+              `fetch fallback also failed: ${fetchErr.message} (file:// editor origins can't fetch https:// even with permissive CORS).\n` +
+              `Workaround: host the file in a regular GitHub repo (not a gist) and load via jsDelivr — ` +
+              `https://cdn.jsdelivr.net/gh/<user>/<repo>@<branch>/<file>. ` +
+              `jsDelivr serves with application/javascript so <script src> works from any origin, including file://.`;
+            if (meta) meta.textContent = msg;
+            reject(new Error(msg));
+          }
+        );
+      };
+      document.head.appendChild(script);
+    });
+  },
 };
 
 // ===========================================================================
@@ -4681,6 +5233,40 @@ class Graph {
     this.patterns = new Map();
     this._ctxKeys = new Set();
     this._mintCounts = new Map();
+    // Indices over this.contexts so the matcher's contextsNamed/From/To
+    // calls don't have to linear-scan the whole array on every lookup.
+    // matchBody calls these many times per rule per pass; without indices
+    // a 15×45 board (5500+ triples) takes 3+ seconds per fireToQuiescence.
+    // Maps are kept in sync inside addContext / removeContext; the bulk
+    // _ctxKeys.clear() paths (graph reset, load) rebuild from contexts via
+    // _rebuildIndices below.
+    this._byName    = new Map();   // ctx.name    → Context[]
+    this._bySubject = new Map();   // ctx.subject → Context[]
+    this._byTarget  = new Map();   // ctx.target  → Context[]
+    this._lastIndexedLen = 0;
+  }
+  _addToIndex(map, key, ctx) {
+    let arr = map.get(key);
+    if (!arr) { arr = []; map.set(key, arr); }
+    arr.push(ctx);
+  }
+  _removeFromIndex(map, key, ctx) {
+    const arr = map.get(key);
+    if (!arr) return;
+    const i = arr.indexOf(ctx);
+    if (i >= 0) arr.splice(i, 1);
+    if (arr.length === 0) map.delete(key);
+  }
+  _rebuildIndices() {
+    this._byName.clear();
+    this._bySubject.clear();
+    this._byTarget.clear();
+    for (const c of this.contexts) {
+      this._addToIndex(this._byName,    c.name,    c);
+      this._addToIndex(this._bySubject, c.subject, c);
+      this._addToIndex(this._byTarget,  c.target,  c);
+    }
+    this._lastIndexedLen = this.contexts.length;
   }
   addConcept(name, types = [], layer = "rule", originBundleId = null) {
     const c = new Concept(name, types, layer);
@@ -4702,6 +5288,10 @@ class Graph {
     if (this._ctxKeys.has(c.key())) return null;
     this._ctxKeys.add(c.key());
     this.contexts.push(c);
+    this._addToIndex(this._byName,    name,    c);
+    this._addToIndex(this._bySubject, subject, c);
+    this._addToIndex(this._byTarget,  target,  c);
+    this._lastIndexedLen = this.contexts.length;
     pepper.emit("ContextAdded", { name, subject, target, layer, originBundleId });
     return c;
   }
@@ -4710,6 +5300,10 @@ class Graph {
     this._ctxKeys.delete(ctx.key());
     const i = this.contexts.indexOf(ctx);
     if (i >= 0) this.contexts.splice(i, 1);
+    this._removeFromIndex(this._byName,    ctx.name,    ctx);
+    this._removeFromIndex(this._bySubject, ctx.subject, ctx);
+    this._removeFromIndex(this._byTarget,  ctx.target,  ctx);
+    this._lastIndexedLen = this.contexts.length;
   }
   removeConcept(name) {
     this.concepts.delete(name);
@@ -4741,9 +5335,37 @@ class Graph {
     // `types` array.
     return this.contextsTo(name, "IS").length > 0;
   }
-  contextsNamed(n)  { return this.contexts.filter(c => c.name === n); }
-  contextsFrom(s,n) { return this.contexts.filter(c => c.subject === s && (!n || c.name === n)); }
-  contextsTo(t,n)   { return this.contexts.filter(c => c.target  === t && (!n || c.name === n)); }
+  // Indexed lookups. contextsFrom and contextsTo intersect their primary
+  // index with an optional name filter; the smaller of (by-subject, by-name)
+  // is iterated. Returns fresh arrays so callers can mutate freely.
+  // Several call sites mutate this.contexts directly (rename-context, erase,
+  // bundle unimport, save/load); _ensureIndices catches those by comparing
+  // current length to the count seen at last rebuild and rebuilding lazily.
+  // Length-only check is fine for filter/splice paths — they always shrink
+  // or hold size; in-place .name rewrites (the context-rename UI) call
+  // _rebuildIndices explicitly via the existing surface.
+  _ensureIndices() {
+    if (this._lastIndexedLen !== this.contexts.length) this._rebuildIndices();
+  }
+  contextsNamed(n) {
+    this._ensureIndices();
+    const arr = this._byName.get(n);
+    return arr ? arr.slice() : [];
+  }
+  contextsFrom(s, n) {
+    this._ensureIndices();
+    const arr = this._bySubject.get(s);
+    if (!arr) return [];
+    if (!n) return arr.slice();
+    return arr.filter(c => c.name === n);
+  }
+  contextsTo(t, n) {
+    this._ensureIndices();
+    const arr = this._byTarget.get(t);
+    if (!arr) return [];
+    if (!n) return arr.slice();
+    return arr.filter(c => c.name === n);
+  }
   // Returns instance Concepts of a type (leaves only — excludes the type itself and intermediate types)
   conceptsOfType(t) {
     return [...this.concepts.values()]
@@ -4794,6 +5416,19 @@ function scheduleAutoFire() {
     // cares (e.g. the solicit modal) decides what to do with the Quiescent
     // event — engine code never reaches into the UI.
     pepper.emit("Quiescent", { via: "scheduleAutoFire" });
+    // If compost is enabled, take out the trash: superseded Positions,
+    // resolved+THEN'd Choices. Runs after Quiescent so subscribers see the
+    // post-fire state first; compost then emits its own "Composted" event
+    // for anyone tracking the cleanup. Compost never schedules another fire
+    // (removeContext doesn't trigger the auto-fire wrapper), so this is a
+    // pure shrink — no cascade.
+    if (state.compostEnabled) {
+      const stats = pepper.compost();
+      if (stats.removed > 0) {
+        logEntry("fired", `composted ${stats.removed} (${stats.positions}p ${stats.choices}c)`);
+        render();
+      }
+    }
   }, 60);
 }
 
@@ -4821,12 +5456,111 @@ Graph.prototype.addContext = function(...args) {
 //   "Cell"     loose form: var named `Cell` typed Cell
 //   "CellOne"  literal reference (matches when concrete IS-A CellOne)
 
+// Parse a body-token into {name, type, isVar}. The colon distinguishes
+// variables from literals: `cell:Tile` is a variable named "cell" of type
+// "Tile" (binds during OF matching, gets substituted in Gen); a bare token
+// like `GravityStep` or `Advance` is a literal — a direct reference to a
+// concept by name. In OF bodies literals are exact-match filters and never
+// bind. In Gen bodies literals are written verbatim and never substituted.
+// Before this distinction was made, bare tokens were treated as variables
+// with both name and type equal to the token; the matcher would happily
+// bind variable "GravityStep" to any concept that isA GravityStep (e.g.
+// the runtime Choice nodes), and instantiate would then substitute the
+// literal in subsequent Gen writes — producing "Choice<N> IS Choice<M>"
+// triples that cascaded the bug to every downstream gravity step.
+// Stage 2 of math-native salt: arithmetic expressions in pattern bodies.
+// A token can now be an array of the form ["+", lhs, rhs] (or "-", "*",
+// "/", "%"), where each operand is itself a number, a variable name string,
+// or a nested expression array. Evaluated against current bindings.
+//
+// Returns the computed number, or undefined if any referenced variable is
+// unbound (or non-numeric) — the calling code treats undefined as "no
+// match" / "skip this candidate."
+// Stage 3 of math-native salt: parametric rule expansion at bundle-load.
+// One implication template can declare params (e.g., `{name: "R", over:
+// [0, 25]}`) and be expanded into one concrete implication per parameter
+// value. Substitution walks each clause token: a string token that exactly
+// matches a param name is replaced with the param value; a string that
+// contains `{ParamName}` interpolation has every occurrence replaced with
+// the param value stringified; array (expression) tokens recurse; numbers
+// pass through.
+function substituteToken(tok, params) {
+  if (typeof tok === "number") return tok;
+  if (typeof tok === "string") {
+    // Whole-string exact match: token IS the param ref. Yields the raw
+    // param value (preserves Int-ness when the value is a number).
+    if (Object.prototype.hasOwnProperty.call(params, tok)) return params[tok];
+    // Interpolation: replace every `{ParamName}` occurrence with the
+    // stringified value. Used for building concept names like `Row_{R}`
+    // that need the result to be a string, not a number.
+    let out = tok;
+    for (const k of Object.keys(params)) {
+      if (out.includes("{" + k + "}")) {
+        out = out.split("{" + k + "}").join(String(params[k]));
+      }
+    }
+    return out;
+  }
+  if (Array.isArray(tok)) {
+    return tok.map(t => substituteToken(t, params));
+  }
+  return tok;
+}
+
+function substituteBody(body, params) {
+  return body.map(clause => clause.map(item => substituteToken(item, params)));
+}
+
+function evalExpr(expr, bindings) {
+  if (typeof expr === "number") return expr;
+  if (typeof expr === "string") {
+    if (expr in bindings) {
+      const v = bindings[expr];
+      return typeof v === "number" ? v : undefined;
+    }
+    return undefined;
+  }
+  if (Array.isArray(expr)) {
+    const [op, ...args] = expr;
+    const vals = args.map(a => evalExpr(a, bindings));
+    if (vals.some(v => v === undefined)) return undefined;
+    switch (op) {
+      case "+": return vals[0] + vals[1];
+      case "-": return vals[0] - vals[1];
+      case "*": return vals[0] * vals[1];
+      case "/": return vals[0] / vals[1];
+      case "%": return vals[0] % vals[1];
+      default:  return undefined;
+    }
+  }
+  return undefined;
+}
+
 function parseVar(s) {
+  // Expression token (Stage 2): array-form `["+", "r", 1]`. Not a variable
+  // and not a literal — must be evaluated against current bindings at match
+  // time. The matcher resolves it to a numeric value and compares for
+  // equality against the concrete subject/target.
+  if (Array.isArray(s)) {
+    return { name: "<expr>", type: "Int", isVar: false, isLiteral: false, isExpr: true, expr: s };
+  }
+  // Numeric literal token (Stage 1 of math-native salt): a number in a
+  // pattern body slot means "this position must be exactly this value." It
+  // matches a value-typed triple target (or subject, hypothetically) by
+  // numeric equality. Not a variable — never binds.
+  if (typeof s === "number") {
+    return { name: String(s), type: "Int", isVar: false, isLiteral: true, value: s };
+  }
+  if (typeof s !== "string") {
+    // Anything other than string/number/array is treated as an opaque
+    // literal for now; future stages (Tuple, etc.) will narrow this.
+    return { name: String(s), type: "", isVar: false, isLiteral: true, value: s };
+  }
   if (s.includes(':')) {
     const [name, type] = s.split(':').map(x => x.trim());
-    return { name, type };
+    return { name, type, isVar: true };
   }
-  return { name: s, type: s };
+  return { name: s, type: s, isVar: false };
 }
 
 function splitBody(body) {
@@ -4841,14 +5575,44 @@ function splitBody(body) {
 }
 
 function tryBind(graph, v, concrete, bindings) {
-  const { name, type } = v;
+  const { name, type, isVar, isLiteral, isExpr, expr, value } = v;
+  // Expression token: evaluate against current bindings and require equality
+  // to the concrete. If any referenced variable isn't yet bound (the
+  // expression depends on bindings later in the clause order), evalExpr
+  // returns undefined and the candidate is rejected. Authors order
+  // expression-bearing clauses after the clauses that bind their inputs.
+  if (isExpr) {
+    const r = evalExpr(expr, bindings);
+    if (r === undefined) return null;
+    return concrete === r ? bindings : null;
+  }
+  // Numeric (or other primitive) literal: match exactly by value.
+  if (isLiteral) return concrete === value ? bindings : null;
+  // Literal concept name: exact-match check, no binding side-effect. Bare
+  // tokens like "GravityStep" or "Advance" reference a specific concept by
+  // name and must match it exactly — they never bind to other concepts
+  // even if those concepts isA the literal's type.
+  if (!isVar) return concrete === name ? bindings : null;
   if (name in bindings) {
     return bindings[name] === concrete ? bindings : null;
   }
-  for (const [otherName, otherConcrete] of Object.entries(bindings)) {
-    if (otherConcrete === concrete && otherName !== name) return null;
+  // Linearity (distinct vars → distinct concretes) applies to concept-name
+  // bindings only. Numeric values are *values*, not entities — two
+  // different vars binding to the same number (e.g., two positions in row 5)
+  // is legitimate and must be allowed.
+  if (typeof concrete === "string") {
+    for (const [otherName, otherConcrete] of Object.entries(bindings)) {
+      if (typeof otherConcrete === "string" && otherConcrete === concrete && otherName !== name) return null;
+    }
   }
-  if (!graph.isA(concrete, type)) return null;
+  // Type check. "Int" is a built-in primitive type that bypasses isA and
+  // accepts any JS number concrete. All other types route through the
+  // ontology's IS hierarchy as before.
+  if (type === "Int") {
+    if (typeof concrete !== "number") return null;
+  } else {
+    if (!graph.isA(concrete, type)) return null;
+  }
   return { ...bindings, [name]: concrete };
 }
 
@@ -4872,11 +5636,31 @@ function hasMatch(graph, svRaw, ct, tvRaw, bindings) {
   const sv = parseVar(svRaw);
   const tv = parseVar(tvRaw);
   for (const c of graph.contextsNamed(ct)) {
-    if (sv.name in bindings) {
+    // Subject check.
+    if (sv.isExpr) {
+      const r = evalExpr(sv.expr, bindings);
+      if (r === undefined || c.subject !== r) continue;
+    } else if (sv.isLiteral) {
+      if (c.subject !== sv.value) continue;
+    } else if (!sv.isVar) {
+      if (c.subject !== sv.name) continue;
+    } else if (sv.name in bindings) {
       if (bindings[sv.name] !== c.subject) continue;
+    } else if (sv.type === "Int") {
+      if (typeof c.subject !== "number") continue;
     } else if (!graph.isA(c.subject, sv.type)) continue;
-    if (tv.name in bindings) {
+    // Target check.
+    if (tv.isExpr) {
+      const r = evalExpr(tv.expr, bindings);
+      if (r === undefined || c.target !== r) continue;
+    } else if (tv.isLiteral) {
+      if (c.target !== tv.value) continue;
+    } else if (!tv.isVar) {
+      if (c.target !== tv.name) continue;
+    } else if (tv.name in bindings) {
       if (bindings[tv.name] !== c.target) continue;
+    } else if (tv.type === "Int") {
+      if (typeof c.target !== "number") continue;
     } else if (!graph.isA(c.target, tv.type)) continue;
     return true;
   }
@@ -5123,12 +5907,14 @@ function instantiate(graph, pattern, initial) {
     if (!(name in b)) b[name] = mintFresh(graph, type);
   }
 
-  // 2. Search for unbound vars in positives (subject to NEQ + AllDifferent constraints)
+  // 2. Search for unbound vars in positives (subject to NEQ + AllDifferent constraints).
+  // Only declared variables (tokens with a colon) participate — literals are
+  // fixed references and have no search to do.
   const unbound = new Set();
   for (const [sv, ct, tv] of pos) {
     const svP = parseVar(sv), tvP = parseVar(tv);
-    if (!(svP.name in b)) unbound.add(sv);
-    if (!(tvP.name in b)) unbound.add(tv);
+    if (svP.isVar && !(svP.name in b)) unbound.add(sv);
+    if (tvP.isVar && !(tvP.name in b)) unbound.add(tv);
   }
   for (const varStr of unbound) {
     const { name, type } = parseVar(varStr);
@@ -5156,12 +5942,26 @@ function instantiate(graph, pattern, initial) {
     if (b[v1] !== undefined && b[v2] !== undefined && b[v1] === b[v2]) return [];
   }
 
-  // 4. ADD positive triples using bindings
+  // 4. ADD positive triples using bindings. Variables (colon-form) substitute
+  // through bindings; literals (bare tokens) are written verbatim. Numeric
+  // literals (Stage 1) materialize as their value, not their stringified
+  // name. Expression tokens (Stage 2) are evaluated against the current
+  // bindings to produce the materialized numeric value; if the expression
+  // can't be evaluated (a referenced variable is unbound), the triple is
+  // skipped — better than minting NaN or a bogus name.
   const added = [];
   for (const [svRaw, ct, tvRaw] of pos) {
     const sv = parseVar(svRaw), tv = parseVar(tvRaw);
-    const subj = sv.name in b ? b[sv.name] : svRaw;
-    const tgt  = tv.name in b ? b[tv.name] : tvRaw;
+    let subj, tgt;
+    if      (sv.isExpr)    subj = evalExpr(sv.expr, b);
+    else if (sv.isLiteral) subj = sv.value;
+    else if (sv.isVar)     subj = (sv.name in b ? b[sv.name] : svRaw);
+    else                   subj = sv.name;
+    if      (tv.isExpr)    tgt = evalExpr(tv.expr, b);
+    else if (tv.isLiteral) tgt = tv.value;
+    else if (tv.isVar)     tgt = (tv.name in b ? b[tv.name] : tvRaw);
+    else                   tgt = tv.name;
+    if (subj === undefined || tgt === undefined) continue;
     const ctx = graph.addContext(ct, subj, tgt, "runtime");
     if (ctx) added.push({ ctx, bindings: { ...b } });
   }
@@ -6505,6 +7305,34 @@ function resetViewport() {
   updateZoomReadout();
 }
 
+// Update the small "showing X / Y nodes · N / M edges" notice pinned at the
+// top of the graph view. The notice exists only when caps are hit — if all
+// visible nodes/edges fit under the cap, the element is removed. Lives as a
+// child of `.graph-view` so it pans/zooms-resilient (it's CSS-positioned
+// absolute over the SVG, not inside it).
+function updateGraphCapNotice(renderedNodes, totalNodes, renderedEdges, totalEdges) {
+  const view = document.querySelector("#inspector-body .graph-view");
+  if (!view) return;
+  let notice = view.querySelector(".graph-cap-notice");
+  const capHit = (renderedNodes < totalNodes) || (renderedEdges < totalEdges);
+  if (!capHit) {
+    if (notice) notice.remove();
+    return;
+  }
+  if (!notice) {
+    notice = document.createElement("div");
+    notice.className = "graph-cap-notice";
+    view.appendChild(notice);
+  }
+  const nClass = renderedNodes < totalNodes ? "clipped" : "";
+  const eClass = renderedEdges < totalEdges ? "clipped" : "";
+  notice.innerHTML =
+    `rendering limited · ` +
+    `<span class="${nClass}">${renderedNodes} / ${totalNodes} nodes</span> · ` +
+    `<span class="${eClass}">${renderedEdges} / ${totalEdges} edges</span>` +
+    ` <span class="hint">raise caps in ⚙ Force settings, or narrow with focus/filter</span>`;
+}
+
 function rebuildGraphDOM() {
   const svg = document.querySelector("#inspector-body svg");
   if (!svg) return;
@@ -6514,11 +7342,41 @@ function rebuildGraphDOM() {
   const nodeG  = svg.querySelector("#graph-nodes");
   edgeG.innerHTML = ""; labelG.innerHTML = ""; nodeG.innerHTML = "";
 
+  // Render caps. Compute the rendered node set first: take user-visible nodes
+  // in iteration order, prioritizing the current selection so a user who
+  // clicks a node is never invisibly clipped. Then edges are filtered to
+  // those with BOTH endpoints in the rendered set, and finally capped at
+  // maxRels. The status overlay (updateGraphCapNotice) reflects whatever
+  // counts this produced; if caps weren't hit the overlay is empty.
+  const cfg = state.layoutConfig || {};
+  const maxNodes = (cfg.maxNodes ?? 50) | 0;
+  const maxRels  = (cfg.maxRels  ?? 100) | 0;
+  const visibleNodeNames = [];
+  for (const [name] of state.layout.nodes) {
+    if (isNodeVisible(name)) visibleNodeNames.push(name);
+  }
+  // Reorder so selected nodes come first — they're the user's anchor of
+  // attention and should never get pushed out of the rendered set by the cap.
+  visibleNodeNames.sort((a, b) => {
+    const sa = state.graphSelection.has(a) ? 0 : 1;
+    const sb = state.graphSelection.has(b) ? 0 : 1;
+    return sa - sb;
+  });
+  const renderedNodeSet = new Set(visibleNodeNames.slice(0, maxNodes));
+  const totalVisibleNodes = visibleNodeNames.length;
+
   // Group edges by symmetric (source, target) pair so we can bow multi-edges.
   // Two nodes with three relationships between them produce three curves at
   // increasing perpendicular offsets, so all of them stay simultaneously
   // visible rather than stacking into one indistinguishable straight line.
-  const visibleEdges = state.layout.edges.filter(isEdgeVisible);
+  const allVisibleEdges = state.layout.edges.filter(e =>
+    isEdgeVisible(e) && renderedNodeSet.has(e.source) && renderedNodeSet.has(e.target)
+  );
+  const totalVisibleEdges = allVisibleEdges.length;
+  const visibleEdges = allVisibleEdges.slice(0, maxRels);
+
+  updateGraphCapNotice(renderedNodeSet.size, totalVisibleNodes, visibleEdges.length, totalVisibleEdges);
+
   const pairGroups = new Map();
   for (const e of visibleEdges) {
     const k = (e.source < e.target) ? `${e.source}|${e.target}` : `${e.target}|${e.source}`;
@@ -6561,7 +7419,7 @@ function rebuildGraphDOM() {
     labelG.appendChild(label);
   }
   for (const [name, node] of state.layout.nodes) {
-    if (!isNodeVisible(name)) continue;
+    if (!renderedNodeSet.has(name)) continue;
     const g = document.createElementNS(NS, "g");
     const cls = classifyNode(name);
     g.classList.add("graph-node");
@@ -8027,6 +8885,7 @@ const state = {
   selectedItem: null,           // {name, kind} of the currently-inspected item — drives the right summary panel
   importedBundles: new Map(),   // bundleId → {importedAt, name, snapshot, members} for unimport + denatured detection
   autoFireEnabled: true,        // when true, every graph mutation schedules a fire-to-quiescence — implications self-saturate as their premises become true
+  compostEnabled: false,        // when true, after each fire-to-quiescence pepper.compost() runs — superseded Positions and resolved+THEN'd Choices are removed
   runSubtab: "runtime",         // which sub-section is showing inside the Run tab
   layoutMode: "force",          // current layout algorithm — "force" runs continuously; all others run once and pin
   graphPopover: null,           // "actions" | "view" | "filter" | null — which workspace-topbar popover is open
@@ -8045,6 +8904,15 @@ const state = {
     springK:    0.04,    // edge stiffness
     nodeSize:   16,      // base radius — sized so labels can sit inside the node with a white halo for legibility
     typeMult: { std: 1, rule: 1, content: 1, runtime: 1, impl: 1, pattern: 1 },
+    // Render caps. Salt's force layout + DOM rebuild are O(N) in nodes and
+    // O(E) in edges; on a 1.5k-node / 9k-edge ontology that's hundreds of
+    // milliseconds per render and a lot of label text fighting for screen
+    // space. Cap rendering at sensible defaults so the user sees a tractable
+    // slice; raise via the Layout settings panel when needed. Caps only
+    // affect rendering — the underlying graph is untouched, and focus/filter
+    // queries are the principled way to pick which subset gets rendered.
+    maxNodes:   50,
+    maxRels:    100,
   },
 };
 
@@ -8145,6 +9013,13 @@ function updateCounts() {
 
 function render() {
   updateCounts();
+  // In pepper mode the salt-UI panels are display:none — global tree, tab
+  // content, summary panel are all hidden. Skip their expensive rebuild;
+  // re-running it would just write innerHTML into elements nobody can see.
+  // Importing a 700-concept / 5500-triple bundle takes ~14s with the full
+  // render path, ~1.6s with this bail. setEditorMode() runs a fresh render
+  // when the user flips back to salt so they catch up to current state.
+  if (document.body.dataset && document.body.dataset.mode === "pepper") return;
   document.querySelectorAll(".etab").forEach(t => {
     t.classList.toggle("active", t.dataset.etab === state.activeTab);
   });
@@ -9707,204 +10582,6 @@ const PATTERN_LIBRARY = [
     ],
   },
   {
-    id: "bundle-tic-tac-toe",
-    name: "Tic-Tac-Toe",
-    category: "Bundles",
-    description: "Tic-Tac-Toe — a full two-agent alternating game built on the Input primitive. Two Agents (PlayerX, PlayerO) take turns. A turn is a Choice the agent MAKES, OF the currently-empty cells; the solicit scanner asks that agent to pick. Resolving a turn does three things via rules: (1) the move bridge places the agent's mark on the chosen cell (PlayerX PLAYS X, PlayerO PLAYS O); (2) win detection checks the 8 lines; (3) if no winner, the next-turn rule mints the opponent's Choice and the offer rule populates it with the remaining empties — an unbalanced choice that solicits the opponent. The loop runs until a line completes (win) or the board fills (draw). Rule order matters: place → detect-win → next-turn, so a winning move halts the loop in the same pass (the next-turn rule is guarded by NOT Winner, which becomes true before it's evaluated). Depends on bundle-tiles (Tile) and bundle-agency (Agent, MAKES — which pulls in bundle-input's Choice/Option/Chosen/OF/CHOSE). Seed: an empty board with PlayerX to move. Import and Fire All to be asked for X's first move.",
-    dependsOn: ["bundle-tiles", "bundle-agency"],
-    concepts: [
-      // Abstract Mark — parent of the two symbols. Each Agent PLAYS one.
-      { name: "Mark",   types: ["Concept"] },
-      { name: "X",      types: ["Mark"] },
-      { name: "O",      types: ["Mark"] },
-      // Line — a group of 3 cells that win if all marked the same. 8 instances
-      // in the seed: Row1/2/3, Col1/2/3, DiagA, DiagB. Cells join via IN.
-      { name: "Line",   types: ["Concept"] },
-      // Winner — outcome marker. A Mark IS Winner once it completes a line.
-      // Its presence also halts the turn loop (rules below guard on NOT Winner).
-      { name: "Winner", types: ["Concept"] },
-      // The two players. Agents (from bundle-agency) so they MAKE Choices, and
-      // each PLAYS a specific mark so the move bridge knows what to place.
-      { name: "PlayerX", types: ["Agent"] },
-      { name: "PlayerO", types: ["Agent"] },
-    ],
-    contexts: [
-      // IN — cell-to-line membership. Doubles as the positive anchor the offer
-      // rule uses to enumerate cells (a cell variable that appears only in NOT
-      // clauses can't be bound; IN gives it a positive source).
-      { name: "IN",       subject_type: "Tile",  target_type: "Line" },
-      // PLAYS — which mark an agent places. PlayerX PLAYS X, PlayerO PLAYS O.
-      { name: "PLAYS",    subject_type: "Agent", target_type: "Mark" },
-      // OPPONENT — turn handoff. Symmetric: X's opponent is O and vice-versa.
-      // The next-turn rule reads this to attribute the freshly-minted Choice.
-      { name: "OPPONENT", subject_type: "Agent", target_type: "Agent" },
-      // THEN (reused from the engine) chains a resolved Choice to the next
-      // turn's Choice; its absence guards the next-turn rule against re-minting.
-    ],
-    patterns: [
-      // ---- Win detection: 3 cells in one line, all the same mark ----
-      // One pair per side. cell1/2/3 are positionally distinct (engine forces
-      // distinct bindings); the shared `line` forces them into one line.
-      {
-        name: "TTT_XWinsOf",
-        body: [
-          ["cell1:Tile", "HAS", "X"], ["cell2:Tile", "HAS", "X"], ["cell3:Tile", "HAS", "X"],
-          ["cell1:Tile", "IN", "line:Line"], ["cell2:Tile", "IN", "line:Line"], ["cell3:Tile", "IN", "line:Line"],
-        ],
-        aliases: [
-          { name: "cell1", type: "Tile" }, { name: "cell2", type: "Tile" },
-          { name: "cell3", type: "Tile" }, { name: "line",  type: "Line" },
-        ],
-      },
-      { name: "TTT_XWinsGen", body: [["X", "IS", "Winner"]], aliases: [] },
-      {
-        name: "TTT_OWinsOf",
-        body: [
-          ["cell1:Tile", "HAS", "O"], ["cell2:Tile", "HAS", "O"], ["cell3:Tile", "HAS", "O"],
-          ["cell1:Tile", "IN", "line:Line"], ["cell2:Tile", "IN", "line:Line"], ["cell3:Tile", "IN", "line:Line"],
-        ],
-        aliases: [
-          { name: "cell1", type: "Tile" }, { name: "cell2", type: "Tile" },
-          { name: "cell3", type: "Tile" }, { name: "line",  type: "Line" },
-        ],
-      },
-      { name: "TTT_OWinsGen", body: [["O", "IS", "Winner"]], aliases: [] },
-      // ---- Move bridge: a resolved turn places the agent's mark ----
-      // agent MAKES choice, choice CHOSE cell, agent PLAYS mark  →  cell HAS mark.
-      // The mark is whatever the agent PLAYS, so X-turns place X and O-turns O.
-      {
-        name: "TTT_PlaceMoveOf",
-        body: [
-          ["agent:Agent",  "MAKES", "choice:Choice"],
-          ["choice:Choice", "CHOSE", "cell:Tile"],
-          ["agent:Agent",  "PLAYS", "mark:Mark"],
-        ],
-        aliases: [
-          { name: "agent",  type: "Agent"  },
-          { name: "choice", type: "Choice" },
-          { name: "cell",   type: "Tile"   },
-          { name: "mark",   type: "Mark"   },
-        ],
-      },
-      {
-        name: "TTT_PlaceMoveGen",
-        body: [["cell:Tile", "HAS", "mark:Mark"]],
-        aliases: [ { name: "cell", type: "Tile" }, { name: "mark", type: "Mark" } ],
-      },
-      // ---- Next turn: a resolved turn mints the opponent's Choice ----
-      // Guarded by NOT (choice THEN _) so it mints exactly one successor, and
-      // NOT (w IS Winner) so a winning move halts the loop. Because the win
-      // rules are ordered BEFORE this one, a winning move sets X/O IS Winner
-      // earlier in the same pass, making this guard fail — no next turn.
-      {
-        name: "TTT_NextTurnOf",
-        body: [
-          ["agent:Agent",   "MAKES",    "choice:Choice"],
-          ["choice:Choice", "CHOSE",    "cell:Tile"],
-          ["agent:Agent",   "OPPONENT", "other:Agent"],
-          ["NOT", "choice:Choice", "THEN", "nxt:Choice"],
-          ["NOT", "w:Mark", "IS", "Winner"],
-        ],
-        aliases: [
-          { name: "agent",  type: "Agent"  },
-          { name: "choice", type: "Choice" },
-          { name: "cell",   type: "Tile"   },
-          { name: "other",  type: "Agent"  },
-        ],
-      },
-      // Mint a fresh Choice, chain it after the resolved one, hand it to the
-      // opponent. The fresh Choice has no options yet — the offer rule fills it.
-      {
-        name: "TTT_NextTurnGen",
-        body: [
-          ["MINT", "next:Choice"],
-          ["choice:Choice", "THEN",  "next:Choice"],
-          ["other:Agent",   "MAKES", "next:Choice"],
-        ],
-        aliases: [
-          { name: "choice", type: "Choice" },
-          { name: "other",  type: "Agent"  },
-          { name: "next",   type: "Choice" },
-        ],
-      },
-      // ---- Offer: populate an unresolved agent-Choice with the empty cells ----
-      // Fires once per (unresolved choice, empty unoffered cell). The IN triple
-      // is the positive anchor that enumerates cells; the three NOT clauses keep
-      // it to genuinely-empty, not-yet-offered cells of an unresolved choice,
-      // and the winner guard stops offering once the game is decided.
-      {
-        name: "TTT_OfferCellOf",
-        body: [
-          ["other:Agent", "MAKES", "choice:Choice"],
-          ["cell:Tile",   "IN",    "line:Line"],
-          ["NOT", "choice:Choice", "CHOSE", "anyChosen:Chosen"],
-          ["NOT", "cell:Tile",     "HAS",   "anyMark:Mark"],
-          ["NOT", "choice:Choice", "OF",    "cell:Tile"],
-          ["NOT", "w:Mark", "IS", "Winner"],
-        ],
-        aliases: [
-          { name: "other",  type: "Agent"  },
-          { name: "choice", type: "Choice" },
-          { name: "cell",   type: "Tile"   },
-          { name: "line",   type: "Line"   },
-        ],
-      },
-      {
-        name: "TTT_OfferCellGen",
-        body: [["choice:Choice", "OF", "cell:Tile"]],
-        aliases: [ { name: "choice", type: "Choice" }, { name: "cell", type: "Tile" } ],
-      },
-    ],
-    implications: [
-      // ORDER IS LOAD-BEARING. allImplications() preserves insertion order, and
-      // within one fireAll pass each implication re-matches against the triples
-      // added by earlier ones. So: place the mark FIRST, then detect a win on
-      // the new board, THEN consider the next turn (which is guarded by NOT
-      // Winner). A winning move therefore halts the loop in the same pass —
-      // the win triple exists before NextTurn is evaluated. Offer runs last to
-      // fill whatever fresh Choice NextTurn just minted.
-      { name: "TTT_PlaceMove", of: "TTT_PlaceMoveOf", generates: "TTT_PlaceMoveGen" },
-      { name: "TTT_XWins",     of: "TTT_XWinsOf",     generates: "TTT_XWinsGen"     },
-      { name: "TTT_OWins",     of: "TTT_OWinsOf",     generates: "TTT_OWinsGen"     },
-      { name: "TTT_NextTurn",  of: "TTT_NextTurnOf",  generates: "TTT_NextTurnGen"  },
-      { name: "TTT_OfferCell", of: "TTT_OfferCellOf", generates: "TTT_OfferCellGen" },
-    ],
-    seed: {
-      concepts: [
-        // Empty 3x3 board.
-        { name: "Cell11", types: ["Tile"] }, { name: "Cell12", types: ["Tile"] }, { name: "Cell13", types: ["Tile"] },
-        { name: "Cell21", types: ["Tile"] }, { name: "Cell22", types: ["Tile"] }, { name: "Cell23", types: ["Tile"] },
-        { name: "Cell31", types: ["Tile"] }, { name: "Cell32", types: ["Tile"] }, { name: "Cell33", types: ["Tile"] },
-        { name: "Row1",  types: ["Line"] }, { name: "Row2", types: ["Line"] }, { name: "Row3", types: ["Line"] },
-        { name: "Col1",  types: ["Line"] }, { name: "Col2", types: ["Line"] }, { name: "Col3", types: ["Line"] },
-        { name: "DiagA", types: ["Line"] }, { name: "DiagB", types: ["Line"] },
-        // The opening move — an unresolved Choice PlayerX MAKES. The offer rule
-        // populates it with all 9 empty cells on the first fire, then the
-        // scanner solicits X's move. No OF edges in the seed — they're derived.
-        { name: "OpeningMove", types: ["Choice"] },
-      ],
-      triples: [
-        // Cell-Line membership (24 IN triples) — the board's win topology.
-        ["Cell11", "IN", "Row1"], ["Cell12", "IN", "Row1"], ["Cell13", "IN", "Row1"],
-        ["Cell21", "IN", "Row2"], ["Cell22", "IN", "Row2"], ["Cell23", "IN", "Row2"],
-        ["Cell31", "IN", "Row3"], ["Cell32", "IN", "Row3"], ["Cell33", "IN", "Row3"],
-        ["Cell11", "IN", "Col1"], ["Cell21", "IN", "Col1"], ["Cell31", "IN", "Col1"],
-        ["Cell12", "IN", "Col2"], ["Cell22", "IN", "Col2"], ["Cell32", "IN", "Col2"],
-        ["Cell13", "IN", "Col3"], ["Cell23", "IN", "Col3"], ["Cell33", "IN", "Col3"],
-        ["Cell11", "IN", "DiagA"], ["Cell22", "IN", "DiagA"], ["Cell33", "IN", "DiagA"],
-        ["Cell13", "IN", "DiagB"], ["Cell22", "IN", "DiagB"], ["Cell31", "IN", "DiagB"],
-        // Players and their marks.
-        ["PlayerX", "PLAYS", "X"],
-        ["PlayerO", "PLAYS", "O"],
-        // Turn handoff (symmetric).
-        ["PlayerX", "OPPONENT", "PlayerO"],
-        ["PlayerO", "OPPONENT", "PlayerX"],
-        // X moves first: PlayerX MAKES the opening (unresolved) Choice.
-        ["PlayerX", "MAKES", "OpeningMove"],
-      ],
-    },
-  },
-  {
     id: "bundle-input",
     name: "Input",
     category: "Bundles",
@@ -9976,6 +10653,69 @@ const PATTERN_LIBRARY = [
       ],
     },
   },
+  // ===========================================================================
+  // bundle-tetris — single-cell Tetris on the additive Position+UPDATES model
+  // ===========================================================================
+  // Every block's position is a Position node carrying FOR (which block) and
+  // AT_CELL (which cell). When a block moves — gravity, line-clear shift —
+  // a rule mints a fresh Position and points its UPDATES at the previous.
+  // The previous Position now has a successor, so the at_cell pattern
+  // (FOR + AT_CELL + NOT newer UPDATES) no longer returns it. The graph
+  // keeps every Position ever generated; current state is derived by the
+  // NOT-UPDATES check, never by mutation or by tense markers on blocks.
+  //
+  // First cut is single-cell blocks on a 4×4 board. Tetrominoes (multi-cell
+  // pieces with rotation) reuse the same Position/UPDATES machinery and are
+  // a clean extension once this architecture has settled. Multi-row shift
+  // after a line clear uses single-hop ROW_ABOVE — only blocks directly
+  // above the cleared row shift down in the first wave; the resulting
+  // blocks then occupy the cleared row and (in v1) get cleared themselves
+  // on a subsequent pass, producing a two-row cascade. Cleaner shift
+  // semantics are a v2 concern.
+  //
+  // Salt rules in this bundle:
+  //   Tetris_Spawn          — SpawnChoice CHOSE cell → mint Block + Position
+  //                            + tie a fresh Step (Down/Left/Right) to the
+  //                            new block
+  //   Tetris_NextSpawn      — after a SpawnChoice resolves, mint the next
+  //                            (the cartridge picks when to resolve it,
+  //                            so the new piece doesn't appear until the
+  //                            cartridge says go)
+  //   Tetris_StepDown       — Step CHOSE Down → mint Position one cell south
+  //   Tetris_StepLeft       — Step CHOSE Left → mint Position one cell west
+  //   Tetris_StepRight      — Step CHOSE Right → mint Position one cell east
+  //   Tetris_NextStep       — after any Step resolves, mint the next Step
+  //                            with the same three options
+  //   Tetris_OnClearedRow   — current Positions whose cell is in a FullRow
+  //                            get superseded by a Position AT Discarded
+  //   Tetris_ShiftAbove     — current Positions whose cell is directly above
+  //                            a FullRow shift one cell south
+  //
+  // One Step per block per cycle — bundling Down/Left/Right into one Choice
+  // serializes movement and prevents the position chain from forking when
+  // gravity-down and lateral fire in the same pass (each would mint from the
+  // same prior current, leaving two current positions). The auto-ticker
+  // submits Down; the cartridge's keyboard handler can preempt with Left/
+  // Right at any time. NextStep mints the successor regardless of which
+  // option won, so the player always has another Step to pick from.
+  //
+  // Full-row DETECTION is owned by the cartridge: a salt rule with N
+  // distinct cells in a row needs N! permutations to enumerate at match
+  // time, intractable past a tiny grid. The cartridge iterates each row
+  // on Quiescent (gated on "no block currently falling") and stamps
+  // Row_X IS FullRow when full, triggering the OnCleared + ShiftAbove
+  // cascade above.
+  //
+  // Patref tokens (outer:Pattern:inner) are NOT expanded in implication OF
+  // bodies — expandPatrefs is only called from stamping and Gen paths. So
+  // the at_cell pattern is kept here for documentation/stamping use, but the
+  // three triples that make it up are INLINED into each implication's OF
+  // body. Repetitive but correct.
+  //
+  // The cartridge owns: which column to spawn into (random / next-in-bag /
+  // player-driven), driving GravityStep ticks via setInterval, detecting
+  // when a block can no longer fall and stopping its gravity loop,
+  // game-over detection (spawn cell occupied at spawn time), and rendering.
 ];
 
 function libraryCategories() {
@@ -10071,6 +10811,52 @@ function _importPatternFromLibraryBody(id, isDependency = false) {
     added.patterns.push(name);
   }
   for (const impl of (tmpl.implications || [])) {
+    // Stage 3: parametric implication — inline OF/GEN bodies plus a params
+    // declaration. Detection: `impl.of` is an array (body), not a string
+    // (pattern ref). One template expands to N concrete (pattern, pattern,
+    // implication) triples, one per parameter combination. Multi-param is
+    // a cartesian product. The resulting per-instance names get a suffix
+    // built from the param values (e.g., RowFull_5_Of / RowFull_5_Gen /
+    // RowFull_5) so each generated rule is uniquely addressable.
+    if (Array.isArray(impl.of)) {
+      const params = impl.params || [];
+      const genBodyTpl = impl.generates || impl.gen;
+      const expand = (idx, current) => {
+        if (idx === params.length) {
+          const ofBody  = substituteBody(impl.of,    current);
+          const genBody = substituteBody(genBodyTpl, current);
+          const suffix = params.length === 0
+            ? ""
+            : "_" + params.map(p => String(current[p.name])).join("_");
+          let implName = impl.name + suffix;
+          let n = 1;
+          while (state.graph.concepts.has(implName)) { n++; implName = impl.name + suffix + "_" + n; }
+          const ofName  = implName + "_Of";
+          const genName = implName + "_Gen";
+          state.graph.addPattern(ofName,  ofBody);
+          state.graph.addPattern(genName, genBody);
+          const ofStored  = state.graph.patterns.get(ofName);
+          const genStored = state.graph.patterns.get(genName);
+          if (ofStored)  ofStored.layer  = BUNDLE_LAYER;
+          if (genStored) genStored.layer = BUNDLE_LAYER;
+          state.graph.addConcept(implName, ["Implication"], BUNDLE_LAYER);
+          state.graph.addContext("OF",        implName, ofName,  BUNDLE_LAYER, id);
+          state.graph.addContext("GENERATES", implName, genName, BUNDLE_LAYER, id);
+          added.patterns.push(ofName, genName);
+          added.implications.push(implName);
+          return;
+        }
+        const p = params[idx];
+        const [start, end] = p.over;
+        for (let v = start; v < end; v++) {
+          current[p.name] = v;
+          expand(idx + 1, current);
+        }
+        delete current[p.name];
+      };
+      expand(0, {});
+      continue;
+    }
     let name = impl.name;
     let n = 1;
     while (state.graph.concepts.has(name)) {
@@ -13943,6 +14729,11 @@ function renderGraph(root) {
             ${showCtrls ? `
             <div class="layout-controls">
               <div class="lc-section">
+                <div class="lc-title">Render caps</div>
+                <label class="lc-row"><span>Max nodes</span><input type="range" class="lc-slider" data-lc="maxNodes" min="10" max="1000" step="10" value="${cfg.maxNodes ?? 50}"><span class="lc-val" data-lc-val="maxNodes">${cfg.maxNodes ?? 50}</span></label>
+                <label class="lc-row"><span>Max edges</span><input type="range" class="lc-slider" data-lc="maxRels" min="10" max="2000" step="10" value="${cfg.maxRels ?? 100}"><span class="lc-val" data-lc-val="maxRels">${cfg.maxRels ?? 100}</span></label>
+              </div>
+              <div class="lc-section">
                 <div class="lc-title">Forces</div>
                 <label class="lc-row"><span>Gravity</span><input type="range" class="lc-slider" data-lc="gravity" min="0" max="0.05" step="0.001" value="${cfg.gravity}"><span class="lc-val" data-lc-val="gravity">${cfg.gravity.toFixed(3)}</span></label>
                 <label class="lc-row"><span>Repulsion</span><input type="range" class="lc-slider" data-lc="repulsion" min="0" max="3000" step="50" value="${cfg.repulsion}"><span class="lc-val" data-lc-val="repulsion">${cfg.repulsion}</span></label>
@@ -14085,7 +14876,7 @@ function renderGraph(root) {
 function wireLayoutControls() {
   const fmt = (key, v) => {
     if (key === "gravity" || key === "springK") return v.toFixed(3);
-    if (key === "nodeSize") return String(v);
+    if (key === "nodeSize" || key === "maxNodes" || key === "maxRels") return String(v | 0);
     return String(Math.round(v));
   };
   document.querySelectorAll("[data-lc]").forEach(slider => {
@@ -14095,7 +14886,7 @@ function wireLayoutControls() {
       state.layoutConfig[key] = v;
       const label = document.querySelector(`[data-lc-val="${key}"]`);
       if (label) label.textContent = fmt(key, v);
-      if (key === "nodeSize") rebuildGraphDOM();
+      if (key === "nodeSize" || key === "maxNodes" || key === "maxRels") rebuildGraphDOM();
     });
   });
   document.querySelectorAll("[data-lc-mult]").forEach(slider => {
@@ -14113,6 +14904,7 @@ function wireLayoutControls() {
     state.layoutConfig = {
       gravity: 0.005, repulsion: 700, springLen: 135, springK: 0.04, nodeSize: 16,
       typeMult: { std: 1, rule: 1, content: 1, runtime: 1, impl: 1, pattern: 1 },
+      maxNodes: 50, maxRels: 100,
     };
     render();
   });
@@ -14561,7 +15353,11 @@ function setEditorMode(mode) {
     pepperPanel.renderPending();
   } else {
     // Switching back to salt — the modal subscriber is now active again, so
-    // surface any pending inputs salt was carrying.
+    // surface any pending inputs salt was carrying. Also run a full render
+    // now that the salt-UI panels are visible again — render() bails out
+    // in pepper mode, so anything that happened in pepper-land (loaded
+    // bundles, fired rules, etc.) needs to be reflected now.
+    if (typeof render === "function") render();
     showSolicitModalFromGraph();
   }
 }
@@ -14573,6 +15369,28 @@ document.querySelectorAll(".salt-logo, .pepper-logo").forEach(el => {
     setEditorMode(document.body.dataset.mode === "pepper" ? "salt" : "pepper");
   });
 });
+
+// Docs overlay — open/close. Visible in both salt and pepper modes since the
+// docs are reference, not workspace. Backdrop click and × button both close;
+// Escape key closes too. No graph state is involved.
+(function() {
+  const overlay = document.getElementById("docs-overlay");
+  const toggle  = document.getElementById("docs-toggle");
+  const closeBtn = document.getElementById("docs-close");
+  if (!overlay || !toggle) return;
+  const open  = () => { overlay.classList.add("open"); };
+  const close = () => { overlay.classList.remove("open"); };
+  toggle.addEventListener("click", open);
+  if (closeBtn) closeBtn.addEventListener("click", close);
+  // Click the dimmed backdrop (outside the panel) to dismiss.
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) close();
+  });
+  // Escape closes from anywhere.
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && overlay.classList.contains("open")) close();
+  });
+})();
 
 // ===========================================================================
 // PEPPER PANEL — the broker's workspace, populated entirely from pepper's API
@@ -14588,19 +15406,72 @@ const pepperPanel = {
   events: [],
   maxEvents: 500,
   filter: "all",
+  _renderEventsScheduled: false,
+
+  // Coalesce burst event-log renders. Bulk operations (bundle imports,
+  // line-clear cascades) can emit thousands of ContextAdded events in one
+  // synchronous burst; rebuilding the 200-row log innerHTML on each one
+  // turns a 1.5s import into a 14s freeze. requestRenderEvents schedules
+  // exactly one render per microtask, so the cost is paid once per burst.
+  requestRenderEvents() {
+    if (this._renderEventsScheduled) return;
+    this._renderEventsScheduled = true;
+    Promise.resolve().then(() => {
+      this._renderEventsScheduled = false;
+      this.renderEvents();
+    });
+  },
 
   init() {
     // Wildcard subscriber: every kind pepper emits flows through here.
     pepper.subscribe("*", ({ kind, payload }) => {
       this.events.push({ kind, payload, time: Date.now() });
       if (this.events.length > this.maxEvents) this.events.shift();
-      this.renderEvents();
+      this.requestRenderEvents();
     });
     // Pending inputs are stable at quiescence — re-derive then.
     pepper.subscribe("Quiescent", () => this.renderPending());
+    // Compost stats refresh after every compost pass.
+    pepper.subscribe("Composted", (stats) => this.renderCompostStats(stats));
     this.wireFilters();
     this.wireQuery();
+    this.wireCompost();
     this.renderPending();
+  },
+
+  // Wire the compost toggle and the "compost now" button. Toggle drives
+  // state.compostEnabled — when true, scheduleAutoFire runs pepper.compost()
+  // after each fire-to-quiescence settles. Manual button runs one pass on
+  // demand regardless of the toggle. Stats line shows the most recent run.
+  wireCompost() {
+    const toggle = document.getElementById("pepper-compost-enabled");
+    const button = document.getElementById("pepper-compost-now");
+    if (toggle) {
+      toggle.checked = !!state.compostEnabled;
+      toggle.addEventListener("change", () => {
+        state.compostEnabled = toggle.checked;
+      });
+    }
+    if (button) {
+      button.addEventListener("click", () => {
+        const stats = pepper.compost();
+        this.renderCompostStats(stats);
+      });
+    }
+  },
+
+  // Show the most recent compost run's counts. Idle text describes the
+  // policy; a recent run replaces it with the numbers and tints green.
+  renderCompostStats(stats) {
+    const el = document.getElementById("pepper-compost-stats");
+    if (!el) return;
+    if (!stats || stats.removed === 0) {
+      el.classList.remove("recent");
+      el.textContent = "nothing to compost · graph already minimal under the at_cell-current / THEN-succeeded criteria";
+    } else {
+      el.classList.add("recent");
+      el.textContent = `composted ${stats.removed} concept${stats.removed === 1 ? "" : "s"} (${stats.positions} superseded Position${stats.positions === 1 ? "" : "s"}, ${stats.choices} resolved Choice${stats.choices === 1 ? "" : "s"}) + all touching triples removed`;
+    }
   },
 
   formatTime(ts) {
@@ -14741,6 +15612,30 @@ const pepperPanel = {
       pepper.runCartridge(id);
     });
     if (stopBtn) stopBtn.addEventListener("click", () => pepper.stopCartridge());
+    // URL loader. Remembers the last entered URL in localStorage so the user
+    // doesn't have to retype after a refresh. Pressing Enter in the input
+    // triggers the load (same as clicking the button).
+    const urlInput  = document.getElementById("pepper-cartridge-url");
+    const urlBtn    = document.getElementById("pepper-cartridge-load-url");
+    if (urlInput) {
+      try {
+        const saved = localStorage.getItem("pepper.cartridgeUrl");
+        if (saved) urlInput.value = saved;
+      } catch (e) { /* storage unavailable; ignore */ }
+    }
+    const doLoad = () => {
+      const url = urlInput ? urlInput.value.trim() : "";
+      if (!url) return;
+      try { localStorage.setItem("pepper.cartridgeUrl", url); } catch (e) {}
+      if (urlBtn) urlBtn.disabled = true;
+      pepper.loadCartridgeFromURL(url).finally(() => {
+        if (urlBtn) urlBtn.disabled = false;
+      });
+    };
+    if (urlBtn)   urlBtn.addEventListener("click", doLoad);
+    if (urlInput) urlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); doLoad(); }
+    });
   },
 };
 pepperPanel.init();
@@ -14756,271 +15651,20 @@ pepperPanel.wireCartridge();
 // notifyInput, query, pendingInputs — so the same cartridge runs unchanged
 // against an out-of-process pepper later.
 
-// Tic-Tac-Toe cartridge. Renders the 3×3 board, marks cells per the artifact's
-// HAS triples, highlights cells the current pending Choice offers (the player
-// whose turn it is can click those), shows winner state. Every cell click is
-// a pepper.notifyInput call into the pending Choice with the chosen Cell as
-// the value — same path pepper.notifyInput uses everywhere else.
-pepper.registerCartridge("tic-tac-toe", {
-  name: "Tic-Tac-Toe Board",
-  description: "3×3 board for bundle-tic-tac-toe. Click an offered cell to play.",
-  requiredBundle: "bundle-tic-tac-toe",
-  mount(container, pep) {
-    container.innerHTML = `
-      <div class="ttt-cartridge">
-        <div class="ttt-status" id="ttt-status">waiting…</div>
-        <div class="ttt-board" id="ttt-board"></div>
-      </div>
-    `;
-    const statusEl = container.querySelector("#ttt-status");
-    const boardEl  = container.querySelector("#ttt-board");
+// The editor ships without built-in cartridges. Tetris and Tic-Tac-Toe are
+// available as standalone files (tetris.cartridge.js, tictactoe.cartridge.js)
+// for hosting on a static URL (regular GitHub repo + jsDelivr works best —
+// gist hosting blocks <script src> due to text/plain + nosniff). Paste a
+// cartridge URL into the pepper-panel input below the dropdown and click
+// "load URL"; the script runs in global scope, calls
+// pepper.registerCartridge(id, def), and is auto-mounted on success.
+//
+// A cartridge is a small object pepper hosts. It knows the semantics of one
+// specific ontology (which concepts exist, what triples mean) and renders a
+// UI tuned to that ontology. It speaks ONLY through the pepper handed to its
+// mount function — subscribe, notifyInput, query, pendingInputs — so the
+// same cartridge runs unchanged against an out-of-process pepper later.
 
-    // Resolve which agent owns a Choice — walks the MAKES edge backward.
-    // The cartridge uses pep.query for this rather than reaching into salt.
-    const agentOf = (choice) => {
-      const makes = pep.query(null, "MAKES", choice);
-      return makes.length > 0 ? makes[0].subject : null;
-    };
-    // Which Mark does an agent play? Read PLAYS edge.
-    const playsOf = (agent) => {
-      const plays = pep.query(agent, "PLAYS", null);
-      return plays.length > 0 ? plays[0].target : null;
-    };
-
-    const render = () => {
-      // Winner read — IS triples targeting Winner.
-      const winnerEdges = pep.query(null, "IS", "Winner");
-      const winner = winnerEdges.length > 0 ? winnerEdges[0].subject : null;
-      const pending = pep.pendingInputs();
-      const turn = pending.length > 0 ? pending[0] : null;
-      const turnAgent = turn ? agentOf(turn.choice) : null;
-      const turnMark  = turnAgent ? playsOf(turnAgent) : null;
-
-      // Status text.
-      if (winner) {
-        statusEl.textContent = `${winner} wins`;
-        statusEl.classList.add("winner");
-      } else if (turn && turnAgent && turnMark) {
-        statusEl.textContent = `${turnAgent} (${turnMark}) · pick a cell`;
-        statusEl.classList.remove("winner");
-      } else if (pep.query("Cell11", "HAS", null).length === 0) {
-        statusEl.textContent = "no game in progress · load bundle-tic-tac-toe and Fire All";
-        statusEl.classList.remove("winner");
-      } else {
-        statusEl.textContent = "draw or halted";
-        statusEl.classList.remove("winner");
-      }
-
-      // Build the 3×3 grid. For each cell, find any HAS Mark triple (the
-      // current play) and whether the pending Choice offers this cell.
-      let html = "";
-      for (let r = 1; r <= 3; r++) {
-        for (let c = 1; c <= 3; c++) {
-          const cell = `Cell${r}${c}`;
-          const hasEdges = pep.query(cell, "HAS", null);
-          const mark = hasEdges.length > 0 ? hasEdges[0].target : "";
-          const offered = !winner && turn && turn.options.includes(cell);
-          const classes = [
-            "ttt-cell",
-            mark === "X" ? "mark-x" : "",
-            mark === "O" ? "mark-o" : "",
-            offered    ? "offered" : "",
-          ].filter(Boolean).join(" ");
-          html += `<button type="button" class="${classes}" data-cell="${cell}"${offered ? "" : " disabled"}>${mark}</button>`;
-        }
-      }
-      boardEl.innerHTML = html;
-
-      // Wire clicks on offered cells. Each click is a pepper.notifyInput
-      // into the pending Choice — same write surface every UI uses. Pepper
-      // validates (cell must be in the offered options); salt cascades the
-      // PlaceMove rule + win check + NextTurn + OfferCell.
-      if (turn) {
-        boardEl.querySelectorAll(".ttt-cell.offered").forEach(btn => {
-          btn.addEventListener("click", () => {
-            pep.notifyInput(turn.choice, btn.dataset.cell);
-          });
-        });
-      }
-    };
-
-    // Re-render every time salt quiesces. That's after every move's full
-    // cascade (PlaceMove → win check → NextTurn → OfferCell). The board
-    // reflects the artifact at fixpoint.
-    const unsub = pep.subscribe("Quiescent", render);
-    render();
-    return () => unsub();
-  },
-});
-
-// Tic-Tac-Toe Reader cartridge — a pure observer. Renders six panels showing
-// the TTT graph's state: players (Agent → Mark → opponent), live status
-// (turn / winner), board view, every winning line with current marks and
-// win flag, the move history reconstructed by walking the THEN chain through
-// Choices, and triple counts. Calls pepper.query for every read; never
-// touches state.graph or salt internals; never calls notifyInput. This is
-// the proof that a cartridge can be a one-way observer of the artifact —
-// the same code shape would work behind a WebSocket against a remote pepper.
-pepper.registerCartridge("tic-tac-toe-reader", {
-  name: "Tic-Tac-Toe Reader",
-  description: "Read-only inspector of the TTT graph: players, board, lines, history, facts.",
-  requiredBundle: "bundle-tic-tac-toe",
-  mount(container, pep) {
-    container.innerHTML = `<div class="tttr-cartridge" id="tttr-root"></div>`;
-    const root = container.querySelector("#tttr-root");
-
-    const render = () => {
-      // PLAYERS — every subject of a PLAYS edge, with their mark and opponent
-      const playsEdges    = pep.query(null, "PLAYS", null);
-      const opponentEdges = pep.query(null, "OPPONENT", null);
-      const players = new Map();
-      for (const e of playsEdges) players.set(e.subject, { mark: e.target, opponent: null });
-      for (const e of opponentEdges) {
-        if (players.has(e.subject)) players.get(e.subject).opponent = e.target;
-      }
-
-      // BOARD — for each cell, the current HAS mark (if any)
-      const board = {};
-      for (let r = 1; r <= 3; r++) for (let c = 1; c <= 3; c++) {
-        const cell = `Cell${r}${c}`;
-        const has = pep.query(cell, "HAS", null);
-        board[cell] = has.length ? has[0].target : "";
-      }
-
-      // WINNER — any subject of an `IS Winner` triple
-      const winnerEdges = pep.query(null, "IS", "Winner");
-      const winner = winnerEdges.length ? winnerEdges[0].subject : null;
-
-      // TURN — pending Choice + its owning Agent + the agent's Mark
-      const pending = pep.pendingInputs();
-      let turn = null, turnAgent = null, turnMark = null;
-      if (pending.length > 0 && !winner) {
-        turn = pending[0];
-        const makes = pep.query(null, "MAKES", turn.choice);
-        if (makes.length) {
-          turnAgent = makes[0].subject;
-          const pl = pep.query(turnAgent, "PLAYS", null);
-          if (pl.length) turnMark = pl[0].target;
-        }
-      }
-
-      // LINES — every Line instance, with its IN'd cells and current marks
-      const lineNames = pep.query(null, "IS", "Line").map(e => e.subject);
-      const lines = lineNames.map(name => {
-        const cells = pep.query(null, "IN", name).map(e => e.subject);
-        const marks = cells.map(c => board[c] || "");
-        const xCount = marks.filter(m => m === "X").length;
-        const oCount = marks.filter(m => m === "O").length;
-        const isWin = (xCount === 3 || oCount === 3);
-        return { name, cells, marks, isWin };
-      });
-
-      // HISTORY — walk the THEN chain starting from OpeningMove, recording
-      // each Choice's CHOSE target and which Agent owns it
-      const history = [];
-      const visited = new Set();
-      let cur = pep.query("OpeningMove", null, null).length > 0 || pep.query(null, null, "OpeningMove").length > 0
-        ? "OpeningMove" : null;
-      while (cur && !visited.has(cur)) {
-        visited.add(cur);
-        const chose = pep.query(cur, "CHOSE", null);
-        const makes = pep.query(null, "MAKES", cur);
-        const agent = makes.length ? makes[0].subject : null;
-        const mark  = agent ? (pep.query(agent, "PLAYS", null)[0]?.target || "") : "";
-        history.push({
-          choice: cur,
-          cell:   chose.length ? chose[0].target : null,
-          agent:  agent || "?",
-          mark,
-        });
-        const next = pep.query(cur, "THEN", null);
-        cur = next.length ? next[0].target : null;
-      }
-
-      // FACTS — quick triple counts
-      const facts = {
-        has:   pep.query(null, "HAS",   null).length,
-        chose: pep.query(null, "CHOSE", null).length,
-        inE:   pep.query(null, "IN",    null).length,
-        makes: pep.query(null, "MAKES", null).length,
-      };
-
-      // Render the six sections
-      const cellGlyph = (c) => {
-        const m = board[c] || "";
-        return `<span class="tttr-mark mark-${(m || "_").toLowerCase()}">${m || "·"}</span>`;
-      };
-      const boardPre =
-        [1,2,3].map(r => " " + [1,2,3].map(c => board[`Cell${r}${c}`] || "·").join(" │ ") + " ").join("\n───┼───┼───\n");
-
-      root.innerHTML = `
-        <div class="tttr-grid">
-          <section class="tttr-section">
-            <h4>players</h4>
-            ${[...players.entries()].map(([agent, p]) =>
-              `<div class="tttr-row"><b>${esc(agent)}</b> plays <span class="tttr-mark mark-${p.mark.toLowerCase()}">${esc(p.mark)}</span> · vs ${esc(p.opponent || "?")}</div>`
-            ).join("") || `<div class="tttr-row tttr-empty">no PLAYS edges</div>`}
-          </section>
-
-          <section class="tttr-section">
-            <h4>status</h4>
-            ${winner
-              ? `<div class="tttr-row winner">${esc(winner)} wins</div>`
-              : turn && turnAgent
-                ? `<div class="tttr-row">turn: <b>${esc(turnAgent)}</b> (${esc(turnMark)}) · ${turn.options.length} option${turn.options.length === 1 ? "" : "s"}</div>`
-                : `<div class="tttr-row tttr-empty">no active turn</div>`}
-          </section>
-
-          <section class="tttr-section tttr-board">
-            <h4>board</h4>
-            <pre class="tttr-pre">${esc(boardPre)}</pre>
-          </section>
-
-          <section class="tttr-section">
-            <h4>facts</h4>
-            <div class="tttr-row">${facts.has} HAS  ·  ${facts.chose} CHOSE</div>
-            <div class="tttr-row">${facts.inE} IN  ·  ${facts.makes} MAKES</div>
-          </section>
-
-          <section class="tttr-section tttr-lines">
-            <h4>lines · ${lines.length}</h4>
-            <div class="tttr-lines-table">
-              ${lines.map(L => `
-                <div class="tttr-line ${L.isWin ? 'win' : ''}">
-                  <span class="tttr-line-marks">${L.marks.map(m =>
-                    `<span class="tttr-mark mark-${(m || "_").toLowerCase()}">${m || "·"}</span>`
-                  ).join("")}</span>
-                  <span class="tttr-line-cells">${esc(L.cells.join(" — "))}  <em style="color:rgba(255,255,255,0.35)">${esc(L.name)}</em></span>
-                  ${L.isWin ? '<span class="tttr-win-mark">win</span>' : ''}
-                </div>
-              `).join("")}
-            </div>
-          </section>
-
-          <section class="tttr-section tttr-history">
-            <h4>history · ${history.length} move${history.length === 1 ? "" : "s"}</h4>
-            ${history.filter(h => h.cell).map((h, i) => `
-              <div class="tttr-row tttr-move">
-                <span class="tttr-move-num">${i + 1}.</span>
-                <span class="tttr-mark mark-${(h.mark || "_").toLowerCase()}">${h.mark || "·"}</span>
-                <span class="tttr-move-cell">${esc(h.cell)}</span>
-                <span class="tttr-move-meta">${esc(h.choice)} · ${esc(h.agent)}</span>
-              </div>
-            `).join("") || `<div class="tttr-row tttr-empty">no moves yet · OpeningMove is still pending</div>`}
-          </section>
-        </div>
-      `;
-    };
-
-    // Re-render on every salt quiescence — the reader stays in sync with the
-    // artifact without polling. Any other UI driving notifyInput (the Board
-    // cartridge, the salt modal, the pending-inputs panel) will cause this
-    // reader to refresh too.
-    const unsub = pep.subscribe("Quiescent", render);
-    render();
-    return () => unsub();
-  },
-});
 pepperPanel.refreshCartridges();
 
 // The cypher bar now lives inside the graph workspace top bar and is wired

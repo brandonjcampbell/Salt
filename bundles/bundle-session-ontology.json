@@ -1,0 +1,1066 @@
+{
+  "id": "bundle-session-ontology",
+  "name": "Session Ontology",
+  "category": "Bundles",
+  "description": "The card-game ontology built over one session. A loop tree (Game > Run > {Setup, Wander > Happening > Battle > Round > Turn}) doubles as a scope spine: every element declares the lifetime it introduces, and a type's full scope is the union of its own SCOPED_TO plus all scopes inherited via IS. Cards are immutable definitions; Prints bear no attributes and diverge only by the Mods applied to them. Mods are guarded rewrites (APPLIES_TO a Moddable, MODIFIES an Attribute, FROM a guard value, TO a result) with no write-event and no history — a Value is the accumulation of the Mods in scope for it. Location is an Attribute, so movement is attribute-mutation and needs no special machinery. Contains no patterns and no implications: the ontology is only triples.",
+  "dependsOn": [],
+  "concepts": [
+    {
+      "name": "Event",
+      "types": [
+        "Concept"
+      ]
+    },
+    {
+      "name": "Loop",
+      "types": [
+        "Concept"
+      ]
+    },
+    {
+      "name": "LoopStep",
+      "types": [
+        "Event"
+      ]
+    },
+    {
+      "name": "LoopStart",
+      "types": [
+        "LoopStep"
+      ]
+    },
+    {
+      "name": "LoopEnd",
+      "types": [
+        "LoopStep"
+      ]
+    },
+    {
+      "name": "Game",
+      "types": [
+        "Loop"
+      ]
+    },
+    {
+      "name": "Run",
+      "types": [
+        "Loop"
+      ]
+    },
+    {
+      "name": "Setup",
+      "types": [
+        "Loop"
+      ]
+    },
+    {
+      "name": "Wander",
+      "types": [
+        "Loop"
+      ]
+    },
+    {
+      "name": "Happening",
+      "types": [
+        "Loop"
+      ]
+    },
+    {
+      "name": "Battle",
+      "types": [
+        "Happening"
+      ]
+    },
+    {
+      "name": "Round",
+      "types": [
+        "Loop"
+      ]
+    },
+    {
+      "name": "Turn",
+      "types": [
+        "Loop"
+      ]
+    },
+    {
+      "name": "Moddable",
+      "types": [
+        "Concept"
+      ]
+    },
+    {
+      "name": "Locatable",
+      "types": [
+        "Concept"
+      ]
+    },
+    {
+      "name": "Card",
+      "types": [
+        "Concept"
+      ]
+    },
+    {
+      "name": "Print",
+      "types": [
+        "Moddable",
+        "Locatable"
+      ]
+    },
+    {
+      "name": "RunPrint",
+      "types": [
+        "Print"
+      ]
+    },
+    {
+      "name": "BattlePrint",
+      "types": [
+        "Print"
+      ]
+    },
+    {
+      "name": "Attribute",
+      "types": [
+        "Concept"
+      ]
+    },
+    {
+      "name": "Value",
+      "types": [
+        "Concept"
+      ]
+    },
+    {
+      "name": "Location",
+      "types": [
+        "Attribute"
+      ]
+    },
+    {
+      "name": "Alignment",
+      "types": [
+        "Attribute"
+      ]
+    },
+    {
+      "name": "Class",
+      "types": [
+        "Attribute"
+      ]
+    },
+    {
+      "name": "Tag",
+      "types": [
+        "Attribute"
+      ]
+    },
+    {
+      "name": "Drive",
+      "types": [
+        "Attribute"
+      ]
+    },
+    {
+      "name": "Wit",
+      "types": [
+        "Attribute"
+      ]
+    },
+    {
+      "name": "Initiative",
+      "types": [
+        "Attribute"
+      ]
+    },
+    {
+      "name": "Capacity",
+      "types": [
+        "Attribute"
+      ]
+    },
+    {
+      "name": "Burden",
+      "types": [
+        "Attribute"
+      ]
+    },
+    {
+      "name": "TagRequirement",
+      "types": [
+        "Attribute"
+      ]
+    },
+    {
+      "name": "PartySize",
+      "types": [
+        "Attribute"
+      ]
+    },
+    {
+      "name": "Visitor",
+      "types": [
+        "Class"
+      ]
+    },
+    {
+      "name": "Story",
+      "types": [
+        "Class"
+      ]
+    },
+    {
+      "name": "Relic",
+      "types": [
+        "Class"
+      ]
+    },
+    {
+      "name": "Art",
+      "types": [
+        "Class"
+      ]
+    },
+    {
+      "name": "Turning",
+      "types": [
+        "Class"
+      ]
+    },
+    {
+      "name": "License",
+      "types": [
+        "Class"
+      ]
+    },
+    {
+      "name": "Coil",
+      "types": [
+        "Concept"
+      ]
+    },
+    {
+      "name": "Monstrous",
+      "types": [
+        "Coil"
+      ]
+    },
+    {
+      "name": "Angelic",
+      "types": [
+        "Coil"
+      ]
+    },
+    {
+      "name": "Cosmic",
+      "types": [
+        "Coil"
+      ]
+    },
+    {
+      "name": "Infernal",
+      "types": [
+        "Coil"
+      ]
+    },
+    {
+      "name": "Arcane",
+      "types": [
+        "Coil"
+      ]
+    },
+    {
+      "name": "Spectral",
+      "types": [
+        "Coil"
+      ]
+    },
+    {
+      "name": "Chaotic",
+      "types": [
+        "Coil"
+      ]
+    },
+    {
+      "name": "Ethereal",
+      "types": [
+        "Coil"
+      ]
+    },
+    {
+      "name": "Saline",
+      "types": [
+        "Coil"
+      ]
+    },
+    {
+      "name": "None",
+      "types": [
+        "Coil"
+      ]
+    },
+    {
+      "name": "Beast",
+      "types": [
+        "Tag"
+      ]
+    },
+    {
+      "name": "Role",
+      "types": [
+        "Concept"
+      ]
+    },
+    {
+      "name": "Play",
+      "types": [
+        "Concept"
+      ]
+    },
+    {
+      "name": "Borne",
+      "types": [
+        "Role"
+      ]
+    },
+    {
+      "name": "Bearer",
+      "types": [
+        "Role"
+      ]
+    },
+    {
+      "name": "Beckoned",
+      "types": [
+        "Role"
+      ]
+    },
+    {
+      "name": "Mod",
+      "types": [
+        "Concept"
+      ]
+    },
+    {
+      "name": "Transfer",
+      "types": [
+        "Mod"
+      ]
+    },
+    {
+      "name": "Draw",
+      "types": [
+        "Transfer"
+      ]
+    },
+    {
+      "name": "Discard",
+      "types": [
+        "Transfer"
+      ]
+    },
+    {
+      "name": "Banish",
+      "types": [
+        "Transfer"
+      ]
+    },
+    {
+      "name": "Tell",
+      "types": [
+        "Transfer"
+      ]
+    },
+    {
+      "name": "Equip",
+      "types": [
+        "Transfer",
+        "Play"
+      ]
+    },
+    {
+      "name": "Beckon",
+      "types": [
+        "Transfer",
+        "Play"
+      ]
+    },
+    {
+      "name": "Shuffle",
+      "types": [
+        "Mod"
+      ]
+    },
+    {
+      "name": "Player",
+      "types": [
+        "Concept"
+      ]
+    },
+    {
+      "name": "Agent",
+      "types": [
+        "Concept"
+      ]
+    },
+    {
+      "name": "AI",
+      "types": [
+        "Agent"
+      ]
+    },
+    {
+      "name": "Runner",
+      "types": [
+        "Agent",
+        "Player"
+      ]
+    },
+    {
+      "name": "Zone",
+      "types": [
+        "Moddable"
+      ]
+    },
+    {
+      "name": "RunZone",
+      "types": [
+        "Zone"
+      ]
+    },
+    {
+      "name": "BattleZone",
+      "types": [
+        "RunZone"
+      ]
+    },
+    {
+      "name": "Deck",
+      "types": [
+        "Zone"
+      ]
+    },
+    {
+      "name": "RunDeck",
+      "types": [
+        "Deck"
+      ]
+    },
+    {
+      "name": "BattleDeck",
+      "types": [
+        "RunDeck"
+      ]
+    },
+    {
+      "name": "Hand",
+      "types": [
+        "Zone"
+      ]
+    },
+    {
+      "name": "DiscardPile",
+      "types": [
+        "Zone"
+      ]
+    },
+    {
+      "name": "BanishPile",
+      "types": [
+        "BattleZone"
+      ]
+    },
+    {
+      "name": "Party",
+      "types": [
+        "BattleZone"
+      ]
+    },
+    {
+      "name": "PrintZone",
+      "types": [
+        "Zone"
+      ]
+    },
+    {
+      "name": "Backstory",
+      "types": [
+        "PrintZone"
+      ]
+    },
+    {
+      "name": "Inventory",
+      "types": [
+        "PrintZone"
+      ]
+    },
+    {
+      "name": "ZoneIndex",
+      "types": [
+        "Attribute"
+      ]
+    },
+    {
+      "name": "DeckIndex",
+      "types": [
+        "ZoneIndex"
+      ]
+    },
+    {
+      "name": "HandIndex",
+      "types": [
+        "ZoneIndex"
+      ]
+    },
+    {
+      "name": "DiscardIndex",
+      "types": [
+        "ZoneIndex"
+      ]
+    },
+    {
+      "name": "BanishIndex",
+      "types": [
+        "ZoneIndex"
+      ]
+    },
+    {
+      "name": "BackstoryIndex",
+      "types": [
+        "ZoneIndex"
+      ]
+    },
+    {
+      "name": "InventoryIndex",
+      "types": [
+        "ZoneIndex"
+      ]
+    },
+    {
+      "name": "PartyIndex",
+      "types": [
+        "ZoneIndex"
+      ]
+    }
+  ],
+  "contexts": [
+    {
+      "name": "IN",
+      "subject_type": "Concept",
+      "target_type": "Loop"
+    },
+    {
+      "name": "STARTS",
+      "subject_type": "LoopStart",
+      "target_type": "Loop"
+    },
+    {
+      "name": "ENDS",
+      "subject_type": "LoopEnd",
+      "target_type": "Loop"
+    },
+    {
+      "name": "THEN",
+      "subject_type": "Event",
+      "target_type": "Event"
+    },
+    {
+      "name": "SCOPED_TO",
+      "subject_type": "Concept",
+      "target_type": "Loop"
+    },
+    {
+      "name": "REALIZES",
+      "subject_type": "Print",
+      "target_type": "Card"
+    },
+    {
+      "name": "LOCALIZES",
+      "subject_type": "Location",
+      "target_type": "Locatable"
+    },
+    {
+      "name": "AT",
+      "subject_type": "Location",
+      "target_type": "ZoneIndex"
+    },
+    {
+      "name": "ALIGNS_TO",
+      "subject_type": "Alignment",
+      "target_type": "Coil"
+    },
+    {
+      "name": "APPLIES_TO",
+      "subject_type": "Mod",
+      "target_type": "Moddable"
+    },
+    {
+      "name": "MODIFIES",
+      "subject_type": "Mod",
+      "target_type": "Attribute"
+    },
+    {
+      "name": "REQUIRES",
+      "subject_type": "Concept",
+      "target_type": "Concept"
+    },
+    {
+      "name": "LEVIES",
+      "subject_type": "Role",
+      "target_type": "Attribute"
+    },
+    {
+      "name": "MEETS",
+      "subject_type": "Role",
+      "target_type": "Attribute"
+    },
+    {
+      "name": "ASSIGNS",
+      "subject_type": "Play",
+      "target_type": "Role"
+    }
+  ],
+  "patterns": [],
+  "implications": [],
+  "seed": {
+    "concepts": [],
+    "triples": [
+      [
+        "LoopStep",
+        "IN",
+        "Loop"
+      ],
+      [
+        "Run",
+        "IN",
+        "Game"
+      ],
+      [
+        "Setup",
+        "IN",
+        "Run"
+      ],
+      [
+        "Wander",
+        "IN",
+        "Run"
+      ],
+      [
+        "Happening",
+        "IN",
+        "Wander"
+      ],
+      [
+        "Round",
+        "IN",
+        "Battle"
+      ],
+      [
+        "Turn",
+        "IN",
+        "Round"
+      ],
+      [
+        "LoopStart",
+        "STARTS",
+        "Loop"
+      ],
+      [
+        "LoopEnd",
+        "ENDS",
+        "Loop"
+      ],
+      [
+        "Event",
+        "THEN",
+        "Event"
+      ],
+      [
+        "LoopStart",
+        "THEN",
+        "LoopStep"
+      ],
+      [
+        "LoopStep",
+        "THEN",
+        "LoopStep"
+      ],
+      [
+        "LoopStep",
+        "THEN",
+        "LoopEnd"
+      ],
+      [
+        "Setup",
+        "THEN",
+        "Wander"
+      ],
+      [
+        "Value",
+        "OF",
+        "Attribute"
+      ],
+      [
+        "Alignment",
+        "OF",
+        "Card"
+      ],
+      [
+        "Class",
+        "OF",
+        "Card"
+      ],
+      [
+        "Tag",
+        "OF",
+        "Card"
+      ],
+      [
+        "Drive",
+        "OF",
+        "Visitor"
+      ],
+      [
+        "Wit",
+        "OF",
+        "Visitor"
+      ],
+      [
+        "Initiative",
+        "OF",
+        "Visitor"
+      ],
+      [
+        "Capacity",
+        "OF",
+        "Visitor"
+      ],
+      [
+        "Burden",
+        "OF",
+        "Relic"
+      ],
+      [
+        "TagRequirement",
+        "OF",
+        "Relic"
+      ],
+      [
+        "TagRequirement",
+        "OF",
+        "Art"
+      ],
+      [
+        "TagRequirement",
+        "OF",
+        "Story"
+      ],
+      [
+        "PartySize",
+        "OF",
+        "License"
+      ],
+      [
+        "Location",
+        "OF",
+        "Locatable"
+      ],
+      [
+        "ZoneIndex",
+        "OF",
+        "Zone"
+      ],
+      [
+        "DeckIndex",
+        "OF",
+        "Deck"
+      ],
+      [
+        "HandIndex",
+        "OF",
+        "Hand"
+      ],
+      [
+        "DiscardIndex",
+        "OF",
+        "DiscardPile"
+      ],
+      [
+        "BanishIndex",
+        "OF",
+        "BanishPile"
+      ],
+      [
+        "BackstoryIndex",
+        "OF",
+        "Backstory"
+      ],
+      [
+        "InventoryIndex",
+        "OF",
+        "Inventory"
+      ],
+      [
+        "PartyIndex",
+        "OF",
+        "Party"
+      ],
+      [
+        "PrintZone",
+        "OF",
+        "Print"
+      ],
+      [
+        "Backstory",
+        "OF",
+        "RunPrint"
+      ],
+      [
+        "Inventory",
+        "OF",
+        "Visitor"
+      ],
+      [
+        "Print",
+        "REALIZES",
+        "Card"
+      ],
+      [
+        "Location",
+        "LOCALIZES",
+        "Locatable"
+      ],
+      [
+        "Location",
+        "AT",
+        "ZoneIndex"
+      ],
+      [
+        "Alignment",
+        "ALIGNS_TO",
+        "Coil"
+      ],
+      [
+        "Mod",
+        "APPLIES_TO",
+        "Moddable"
+      ],
+      [
+        "Mod",
+        "MODIFIES",
+        "Attribute"
+      ],
+      [
+        "Mod",
+        "FROM",
+        "Value"
+      ],
+      [
+        "Mod",
+        "TO",
+        "Value"
+      ],
+      [
+        "Mod",
+        "SCOPED_TO",
+        "Loop"
+      ],
+      [
+        "Transfer",
+        "MODIFIES",
+        "Location"
+      ],
+      [
+        "Shuffle",
+        "APPLIES_TO",
+        "Zone"
+      ],
+      [
+        "Shuffle",
+        "MODIFIES",
+        "ZoneIndex"
+      ],
+      [
+        "Draw",
+        "FROM",
+        "DeckIndex"
+      ],
+      [
+        "Draw",
+        "TO",
+        "HandIndex"
+      ],
+      [
+        "Discard",
+        "FROM",
+        "ZoneIndex"
+      ],
+      [
+        "Discard",
+        "TO",
+        "DiscardIndex"
+      ],
+      [
+        "Banish",
+        "FROM",
+        "ZoneIndex"
+      ],
+      [
+        "Banish",
+        "TO",
+        "BanishIndex"
+      ],
+      [
+        "Equip",
+        "FROM",
+        "ZoneIndex"
+      ],
+      [
+        "Equip",
+        "TO",
+        "InventoryIndex"
+      ],
+      [
+        "Tell",
+        "FROM",
+        "ZoneIndex"
+      ],
+      [
+        "Tell",
+        "TO",
+        "BackstoryIndex"
+      ],
+      [
+        "Beckon",
+        "TO",
+        "PartyIndex"
+      ],
+      [
+        "Card",
+        "SCOPED_TO",
+        "Game"
+      ],
+      [
+        "RunPrint",
+        "SCOPED_TO",
+        "Run"
+      ],
+      [
+        "BattlePrint",
+        "SCOPED_TO",
+        "Battle"
+      ],
+      [
+        "Zone",
+        "SCOPED_TO",
+        "Game"
+      ],
+      [
+        "RunZone",
+        "SCOPED_TO",
+        "Run"
+      ],
+      [
+        "BattleZone",
+        "SCOPED_TO",
+        "Battle"
+      ],
+      [
+        "RunDeck",
+        "SCOPED_TO",
+        "Run"
+      ],
+      [
+        "BattleDeck",
+        "SCOPED_TO",
+        "Battle"
+      ],
+      [
+        "Hand",
+        "SCOPED_TO",
+        "Battle"
+      ],
+      [
+        "DiscardPile",
+        "SCOPED_TO",
+        "Battle"
+      ],
+      [
+        "Backstory",
+        "SCOPED_TO",
+        "Run"
+      ],
+      [
+        "Inventory",
+        "SCOPED_TO",
+        "Battle"
+      ],
+      [
+        "Player",
+        "SCOPED_TO",
+        "Game"
+      ],
+      [
+        "Agent",
+        "SCOPED_TO",
+        "Battle"
+      ],
+      [
+        "Runner",
+        "SCOPED_TO",
+        "Run"
+      ],
+      [
+        "TagRequirement",
+        "REQUIRES",
+        "Tag"
+      ],
+      [
+        "Borne",
+        "REQUIRES",
+        "Relic"
+      ],
+      [
+        "Borne",
+        "LEVIES",
+        "TagRequirement"
+      ],
+      [
+        "Bearer",
+        "REQUIRES",
+        "Visitor"
+      ],
+      [
+        "Bearer",
+        "MEETS",
+        "TagRequirement"
+      ],
+      [
+        "Equip",
+        "REQUIRES",
+        "TagRequirement"
+      ],
+      [
+        "Equip",
+        "ASSIGNS",
+        "Borne"
+      ],
+      [
+        "Equip",
+        "ASSIGNS",
+        "Bearer"
+      ],
+      [
+        "Beckoned",
+        "REQUIRES",
+        "Visitor"
+      ],
+      [
+        "Beckon",
+        "ASSIGNS",
+        "Beckoned"
+      ]
+    ]
+  }
+}

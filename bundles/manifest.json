@@ -8,6 +8,7 @@
     "bundle-agency.json",
     "bundle-loop.json",
     "bundle-tiles.json",
-    "bundle-input.json"
+    "bundle-input.json",
+    "bundle-session-ontology.json"
   ]
 }

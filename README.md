@@ -4,7 +4,9 @@
 
 > salt writes the rules · pepper brokers the inputs · the artifact holds the truth
 
-Open `index.html` in a browser. That's the whole install.
+Open `index.html` in a browser. That's the whole install. Or play with it live: **https://brandonjcampbell.github.io/Salt/**
+
+![salt editor: the primitives tree, the rule graph, and a Cypher-style match bar](docs/salt-editor.png)
 
 ## What it is
 
@@ -19,6 +21,10 @@ Three roles, strictly separated:
 | **salt** | The rule layer. Pure implications over the artifact. | Yes — but only via rules that fire. |
 | **pepper** | The input broker. When the artifact mints a `Choice`, pepper is the only thing allowed to resolve it (`choice CHOSE option`), and it validates the choice first. | Yes — but only `CHOSE` triples, only valid ones. |
 | **cartridge** | A specialized pepper UI for one bundle (Tetris, a card game, an ontology readout). Owns the canvas, renders from the artifact, talks to it *only* through pepper. | No — reads only; inputs go through `pep.notifyInput`. |
+
+![pepper mode running the Tetris cartridge, with the event log showing each Position triple as it is minted](docs/salt-pepper.png)
+
+*Pepper mode running Tetris. Every falling block is a chain of `Position` concepts linked by `UPDATES`; the event log on the right is the artifact narrating itself.*
 
 ## The model
 

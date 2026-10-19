@@ -4869,6 +4869,9 @@ body[data-mode="pepper"] .project-status, body[data-mode="pepper"] .docs-toggle 
 -->
 <nav class="activity-bar" id="activity-bar" aria-label="views">
   <!-- layer tabs — the sidebar one layer at a time, the way Silky's bar lists one primitive at a time -->
+  <button type="button" class="act-btn" data-layer="engine" data-tip="Engine · the editor's own vocabulary">
+    <svg viewBox="0 0 24 24"><path d="M9.5 6.5h5M12 6.5v3"/><path d="M6 9.5h9.5l2 2H20v6h-2.5l-2 2H8.5l-2-2H4v-4.5l2-2z"/><path d="M4 13H2M20 14h2"/><path d="M8.5 19.5V21M15.5 19.5V21"/></svg><span class="act-count"></span>
+  </button>
   <button type="button" class="act-btn" data-layer="rule" data-tip="Rule · what can happen — the schema you write">
     <svg viewBox="0 0 24 24"><path d="M5 6.5h14M5 12h7M5 17.5h14"/><path d="M15 9.5l3 2.5-3 2.5"/></svg><span class="act-count"></span>
   </button>
@@ -4877,9 +4880,6 @@ body[data-mode="pepper"] .project-status, body[data-mode="pepper"] .docs-toggle 
   </button>
   <button type="button" class="act-btn" data-layer="runtime" data-tip="Runtime · what happened — derived by the engine, disposable">
     <svg viewBox="0 0 24 24"><path d="M3.5 13h4l2.5-6 3.5 11 2.5-7 1.5 2h3"/></svg><span class="act-count"></span>
-  </button>
-  <button type="button" class="act-btn" data-layer="engine" data-tip="Engine · the editor's own vocabulary">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.3M12 18.2v2.3M3.5 12h2.3M18.2 12h2.3M6 6l1.6 1.6M16.4 16.4L18 18M6 18l1.6-1.6M16.4 7.6L18 6"/></svg><span class="act-count"></span>
   </button>
   <span class="act-sep"></span>
   <button type="button" class="act-btn" data-act="graph" data-tip="Graph">

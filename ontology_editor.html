@@ -4509,6 +4509,80 @@ body[data-mode="pepper"] .docs-toggle:hover { color: #000; border-color: #000; }
   border-radius: 4px;
 }
 .docs-close:hover { color: #ff006f; background: #ECE7E0; }
+
+/* ===========================================================================
+ * SHAKER — the assistant's drawer
+ * ===========================================================================
+ * A right-hand drawer, open in either mode. Shaker is a fourth role: it reads
+ * the artifact and the docs, explains firings, drafts rules, and plays through
+ * pepper. Everything it authors is stamped AUTHORED_BY Shaker and kept in a
+ * ledger with undo. */
+.shaker-toggle { margin-left: 0.4rem; position: relative; }
+.shaker-toggle.on { color: #2A2628; border-color: #2A2628; background: rgba(42,38,40,0.06); }
+.shaker-toggle.nudge::after {
+  content: ""; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px;
+  border-radius: 50%; background: var(--brass); box-shadow: 0 0 0 2px #FAF8F5;
+}
+body[data-mode="pepper"] .shaker-toggle.on { color: #000; border-color: #000; background: rgba(0,0,0,0.06); }
+#shaker-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 420px; max-width: 92vw;
+  transform: translateX(104%); transition: transform 0.22s ease;
+  z-index: 150; display: flex; flex-direction: column;
+  background: #FAF8F5; color: #2A2628; border-left: 1px solid #CBC6C1;
+  box-shadow: -12px 0 40px rgba(0,0,0,0.18);
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; font-size: 13px;
+}
+#shaker-panel.open { transform: none; }
+body[data-mode="pepper"] #shaker-panel { background: #1f1f1f; color: #e8e8e8; border-left-color: #333; }
+.shk-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 0.9rem; border-bottom: 1px solid rgba(128,120,120,0.25); }
+.shk-head h2 { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; }
+.shk-head h2 .sub { font-family: 'Spectral', Georgia, serif; text-transform: none; letter-spacing: 0; font-style: italic; font-weight: 400; opacity: 0.6; margin-left: 0.5rem; font-size: 0.78rem; }
+.shk-head button, #shaker-panel .shk-row button, .shk-block-head button, #shaker-openers button, #shaker-level button, #shaker-send, #shaker-stop {
+  background: transparent; border: 1px solid rgba(128,120,120,0.45); color: inherit;
+  padding: 0.22rem 0.55rem; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+  letter-spacing: 0.04em; border-radius: 12px; cursor: pointer; transition: all 0.15s;
+}
+.shk-head button:hover, #shaker-panel button:hover { border-color: currentColor; }
+#shaker-panel button.primary, #shaker-level button.on { background: var(--brass); border-color: var(--brass); color: #fff; }
+#shaker-panel button:disabled { opacity: 0.4; cursor: default; }
+.shk-head .spacer { flex: 1; }
+.shk-controls { padding: 0.5rem 0.9rem; border-bottom: 1px solid rgba(128,120,120,0.25); display: flex; flex-direction: column; gap: 0.4rem; }
+#shaker-level { display: flex; gap: 0.3rem; }
+#shaker-level-blurb { font-size: 0.72rem; opacity: 0.7; line-height: 1.35; }
+#shaker-settings { display: none; padding: 0.6rem 0.9rem; border-bottom: 1px solid rgba(128,120,120,0.25); flex-direction: column; gap: 0.45rem; }
+#shaker-settings.open { display: flex; }
+#shaker-settings label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.72rem; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.85; }
+#shaker-settings input, #shaker-settings select { flex: 1; background: rgba(128,120,120,0.08); border: 1px solid rgba(128,120,120,0.35); color: inherit; padding: 0.3rem 0.45rem; border-radius: 5px; font-size: 0.78rem; font-family: ui-monospace, monospace; min-width: 0; }
+#shaker-settings .shk-note { font-size: 0.72rem; opacity: 0.7; line-height: 1.35; }
+#shaker-settings .shk-row { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+#shaker-settings #shk-status { font-size: 0.72rem; opacity: 0.8; }
+#shaker-messages { flex: 1; overflow-y: auto; padding: 0.7rem 0.9rem; display: flex; flex-direction: column; gap: 0.55rem; }
+.shk-msg { padding: 0.5rem 0.7rem; border-radius: 10px; line-height: 1.45; max-width: 100%; word-wrap: break-word; }
+.shk-msg.you { background: rgba(128,120,120,0.12); align-self: flex-end; max-width: 88%; border-bottom-right-radius: 3px; }
+.shk-msg.shaker { background: rgba(255,255,255,0.7); border: 1px solid rgba(128,120,120,0.25); align-self: flex-start; border-bottom-left-radius: 3px; }
+body[data-mode="pepper"] .shk-msg.shaker { background: rgba(255,255,255,0.06); }
+.shk-msg.tool { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; opacity: 0.6; padding: 0.1rem 0.4rem; align-self: flex-start; }
+.shk-msg.note { font-size: 0.75rem; opacity: 0.7; font-style: italic; align-self: stretch; text-align: center; }
+.shk-msg.note.nudge { opacity: 1; color: var(--brass); border: 1px dashed var(--brass); font-style: normal; }
+.shk-msg code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85em; background: rgba(128,120,120,0.14); padding: 0 0.25em; border-radius: 3px; }
+.shk-msg pre { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.76em; background: rgba(128,120,120,0.12); padding: 0.5rem 0.6rem; border-radius: 6px; overflow-x: auto; margin: 0.4rem 0; white-space: pre; }
+.shk-dots { font-style: italic; opacity: 0.6; }
+.shk-dots::after { content: "…"; animation: shk-blink 1.1s infinite; }
+@keyframes shk-blink { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
+.shk-block { margin-top: 0.5rem; border: 1px solid rgba(128,120,120,0.35); border-radius: 7px; padding: 0.4rem 0.5rem; background: rgba(128,120,120,0.06); }
+.shk-block.applied { border-color: var(--brass); }
+.shk-block.undone { opacity: 0.5; }
+.shk-block-head { display: flex; align-items: center; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.85; margin-bottom: 0.3rem; }
+.shk-action code { font-size: 0.74rem; display: block; padding: 0.1rem 0; background: none; }
+.shk-notes { margin-top: 0.3rem; font-size: 0.72rem; opacity: 0.8; font-family: 'JetBrains Mono', monospace; }
+.shk-tag { font-size: 0.64rem; opacity: 0.7; }
+#shaker-openers { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.45rem 0.9rem; border-top: 1px solid rgba(128,120,120,0.25); }
+.shk-compose { display: flex; gap: 0.4rem; padding: 0.6rem 0.9rem 0.8rem; border-top: 1px solid rgba(128,120,120,0.25); align-items: flex-end; }
+#shaker-input { flex: 1; resize: none; min-height: 2.4rem; max-height: 9rem; background: rgba(128,120,120,0.08); border: 1px solid rgba(128,120,120,0.35); color: inherit; padding: 0.45rem 0.6rem; border-radius: 8px; font: inherit; line-height: 1.4; }
+.shk-ledger { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.9rem; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; opacity: 0.8; border-top: 1px solid rgba(128,120,120,0.25); }
+.shk-ledger .spacer { flex: 1; }
+/* toasts step aside while the drawer is open */
+body.shaker-open #toast-host { right: calc(min(420px, 92vw) + 16px); }
 </style>
 </head>
 <body>
@@ -4564,6 +4638,7 @@ body[data-mode="pepper"] .docs-toggle:hover { color: #000; border-color: #000; }
     <button type="button" class="lswitch" data-layer="content">Content</button>
   </div>
   <button type="button" class="docs-toggle" id="docs-toggle" title="open documentation">docs</button>
+  <button type="button" class="docs-toggle shaker-toggle" id="shaker-toggle" title="open shaker, the assistant">shaker</button>
 </header>
 
 <!--
@@ -4603,6 +4678,9 @@ Tetris_StepDownOf:                Tetris_StepDownGen:
 
     <h2>Cartridges</h2>
     <p>A cartridge is a specialized pepper UI for a specific bundle — Tetris, Tic-Tac-Toe, others. It mounts in pepper mode, owns the main canvas, and talks to the artifact ONLY through the pepper passed to it. Subscribe to <code>Quiescent</code> for fixpoint re-renders, <code>ContextAdded</code> for incremental updates. Write only via <code>pep.notifyInput</code>. Never reach into <code>state.graph</code> for state input — that bypasses the validation. (Cartridges may still call <code>state.graph.addContext</code> for pure annotation, like <code>ensureShapes</code> minting tetromino extras, but never to fulfill a Choice.)</p>
+
+    <h2>Shaker</h2>
+    <p>Shaker is the assistant: a language model briefed with this documentation and a live digest of the artifact, reachable from the <code>shaker</code> button in the header in either mode. It is a fourth role with the same two lawful ways to write that you have. When it <em>authors</em>, it is an editor user: rule- and content-layer concepts, relations, triples, patterns and implications — never runtime. When it <em>plays</em>, it is a pepper client: <code>pepper.notifyInput(choice, option)</code>, validated like any other. It never writes a <code>CHOSE</code> edge itself. Its best trick is reading: ask why a rule fired, fired twice, or never fired, and it runs the OF body and reports the bindings rather than guessing. Everything it authors is a fact in the artifact — <code>X AUTHORED_BY Shaker</code> — so <code>MATCH (n)-[:AUTHORED_BY]->(Shaker)</code> finds it, and a ledger in the drawer undoes it block by block or all at once. Four levels: <em>Off</em> (reads only), <em>Explain</em> (shows proposed edits, never applies), <em>Suggest</em> (one-tap apply), <em>Author</em> (applies as it goes, undo is one tap, and it looks on its own when a fire halts at the budget). The connection — Anthropic, any OpenAI-compatible endpoint, or local Ollama — is stored in this browser only.</p>
 
     <h2>Compost</h2>
     <p>Long-running play accumulates runtime junk: superseded Positions whose successor exists, resolved Choices that already have a <code>CHOSE</code> and a <code>THEN</code> successor. Compost sweeps both, plus every triple touching the removed concept. Toggled in the pepper panel; on by default for Tetris because hundreds of steps each leave four superseded Positions behind. Compost never schedules a fire (removal doesn't trigger the auto-fire hook) so it's a pure shrink — no cascade. When composting a middle link in a THEN chain, compost rewires the chain (predecessor → successor) so a bundle-layer head doesn't lose its successor and re-fire.</p>
@@ -4748,6 +4826,36 @@ Tetris_StepDownOf:                Tetris_StepDownGen:
     </div>
   </div>
 </main>
+
+<!--
+  Shaker — the assistant's drawer. Open in both modes. Shaker is a fourth
+  role: it reads the artifact and the docs, explains firings, drafts rules
+  (rule and content layers only), and plays through pepper. Everything it
+  authors is a queryable fact (X AUTHORED_BY Shaker) and a ledger entry with
+  undo. See the SHAKER section of the script.
+-->
+<aside id="shaker-panel" aria-label="shaker assistant">
+  <div class="shk-head">
+    <h2>shaker<span class="sub">shakes it loose</span></h2>
+    <span class="spacer"></span>
+    <button type="button" id="shaker-clear" title="start a new conversation">new</button>
+    <button type="button" id="shaker-settings-toggle" title="connection settings">⚙</button>
+    <button type="button" id="shaker-close" aria-label="close shaker">×</button>
+  </div>
+  <div class="shk-controls">
+    <div id="shaker-level" role="group" aria-label="shaker level"></div>
+    <div id="shaker-level-blurb"></div>
+  </div>
+  <div id="shaker-settings"></div>
+  <div id="shaker-messages"></div>
+  <div class="shk-ledger"><span id="shaker-ledger"></span><span class="spacer"></span><button type="button" id="shaker-undo-all" title="remove everything Shaker authored this session">undo all</button></div>
+  <div id="shaker-openers"></div>
+  <div class="shk-compose">
+    <textarea id="shaker-input" rows="2" placeholder="ask why a rule fired, or what to write next…"></textarea>
+    <button type="button" id="shaker-stop" style="display:none">stop</button>
+    <button type="button" id="shaker-send" class="primary">ask</button>
+  </div>
+</aside>
 
 <script>
 // ===========================================================================
@@ -15407,7 +15515,732 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(() => render(), 120);
 });
 
+// ===========================================================================
+// SHAKER — the assistant. A fourth role beside salt, pepper, and cartridge.
+// ===========================================================================
+// Shaker is a language model that reads the artifact and talks with you about
+// it. It has two lawful ways to write, and both are the same ways you write:
+//
+//   author — rule- and content-layer triples, patterns, implications: the
+//            exact edits the editor makes by hand. Never the runtime layer.
+//   play   — pepper.notifyInput(choice, option). Shaker is a pepper client
+//            when it plays, an editor user when it authors.
+//
+// Everything Shaker authors is a fact in the artifact (`X AUTHORED_BY Shaker`)
+// and a line in a ledger, so it can be queried, highlighted, and undone.
+// Shaker never reaches into the runtime layer and never writes a CHOSE edge
+// except through pepper.
+//
+// Borrowed from Spinner (Silky's writing partner): actions as a fenced JSON
+// block at the end of a reply; a provenance ledger with one-tap removal;
+// flow levels (off / explain / suggest / author); canned openers; a provider
+// client with continue-on-cut. Unlike Spinner, Shaker is briefed from the
+// artifact itself rather than a digest of prose — salt's state is queryable,
+// so Shaker's best trick is answering "why did that fire?" by reading the
+// bindings.
+
+// ---------------------------------------------------------------------------
+// client — one chat completion against an OpenAI-compatible or Anthropic endpoint
+// ---------------------------------------------------------------------------
+const SHAKER_CONFIG_KEY = "shaker.config";
+const SHAKER_LEVEL_KEY  = "shaker.level";
+const SHAKER_PROVIDERS = [
+  { id: "anthropic", name: "Anthropic", baseUrl: "https://api.anthropic.com", model: "claude-sonnet-5-5", needsKey: true,
+    note: "Claude via the Messages API." },
+  { id: "openai", name: "OpenAI-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini", needsKey: true,
+    note: "OpenAI, OpenRouter, vLLM, LM Studio — anything with /v1/chat/completions." },
+  { id: "ollama", name: "Ollama (local)", baseUrl: "http://localhost:11434/v1", model: "llama3.1", needsKey: false,
+    note: "Start Ollama with OLLAMA_ORIGINS=* so the browser may call it." },
+];
+const shakerProvider = (id) => SHAKER_PROVIDERS.find(p => p.id === id) || SHAKER_PROVIDERS[0];
+function shakerLoadConfig() {
+  try { const s = localStorage.getItem(SHAKER_CONFIG_KEY); if (s) return JSON.parse(s); } catch (e) { /* */ }
+  return null;
+}
+function shakerSaveConfig(c) { try { localStorage.setItem(SHAKER_CONFIG_KEY, JSON.stringify(c)); } catch (e) { /* */ } }
+function shakerDefaultConfig(providerId) {
+  const p = shakerProvider(providerId);
+  return { provider: p.id, baseUrl: p.baseUrl, model: p.model, apiKey: "" };
+}
+
+async function shakerErrorText(r) {
+  let detail = "";
+  try { const j = await r.json(); detail = (j.error && (j.error.message || j.error)) || JSON.stringify(j); }
+  catch (e) { try { detail = await r.text(); } catch (e2) { /* */ } }
+  const d = detail ? " — " + String(detail).slice(0, 300) : "";
+  if (r.status === 401 || r.status === 403) return `The endpoint rejected the API key (${r.status}).` + d;
+  if (r.status === 404) return "Not found (404): check the base URL and model id." + d;
+  return `Request failed (${r.status})` + d;
+}
+
+async function shakerCallOpenAI(c, { system, messages, maxTokens, signal }) {
+  const url = c.baseUrl.replace(/\/+$/, "") + "/chat/completions";
+  const headers = { "Content-Type": "application/json" };
+  if (c.apiKey) headers.Authorization = "Bearer " + c.apiKey;
+  const r = await fetch(url, { method: "POST", headers, signal, body: JSON.stringify({
+    model: c.model, temperature: 0.2, max_tokens: maxTokens,
+    messages: [{ role: "system", content: system }, ...messages],
+  }) });
+  if (!r.ok) throw new Error(await shakerErrorText(r));
+  const data = await r.json();
+  const ch = data.choices && data.choices[0];
+  if (!ch || !ch.message) throw new Error("Unexpected response shape from the model.");
+  return { text: ch.message.content || "", cut: ch.finish_reason === "length" };
+}
+async function shakerCallAnthropic(c, { system, messages, maxTokens, signal }) {
+  const url = c.baseUrl.replace(/\/+$/, "") + "/v1/messages";
+  const r = await fetch(url, { method: "POST", signal, headers: {
+    "Content-Type": "application/json",
+    "x-api-key": c.apiKey,
+    "anthropic-version": "2023-06-01",
+    "anthropic-dangerous-direct-browser-access": "true",
+  }, body: JSON.stringify({ model: c.model, max_tokens: maxTokens, system, messages }) });
+  if (!r.ok) throw new Error(await shakerErrorText(r));
+  const data = await r.json();
+  return { text: (data.content || []).filter(b => b.type === "text").map(b => b.text).join(""), cut: data.stop_reason === "max_tokens" };
+}
+// A reply that hits the token limit is continued — up to twice — by handing
+// the partial back and asking for the rest, then joined.
+async function shakerComplete({ system, messages, maxTokens = 2500, signal, config }) {
+  const c = config || shakerLoadConfig();
+  if (!c) throw new Error("Shaker has no connection — open settings (⚙) and add one.");
+  const run = (msgs) => c.provider === "anthropic"
+    ? shakerCallAnthropic(c, { system, messages: msgs, maxTokens, signal })
+    : shakerCallOpenAI(c, { system, messages: msgs, maxTokens, signal });
+  let { text, cut } = await run(messages);
+  for (let i = 0; cut && i < 2; i++) {
+    const more = await run([...messages, { role: "assistant", content: text },
+      { role: "user", content: "Continue exactly where you left off — no preamble, no repetition, finish what you were writing." }]);
+    text += more.text; cut = more.cut;
+  }
+  return { text, cut };
+}
+
+// ---------------------------------------------------------------------------
+// briefing — the system prompt is the built-in docs plus a live digest
+// ---------------------------------------------------------------------------
+const SHAKER_ACTION_DOCS = `When you want to read more of the artifact, or when the author asks you to change it or to play, end your reply with ONE fenced block tagged salt-actions holding a JSON array of actions. Say in a sentence what you are doing; keep the block last. Use exact names as the artifact knows them.
+
+Read actions (you may use these freely; their results come back to you and you continue):
+- {"action":"query","match":"MATCH (p:Position)-[:AT_CELL]->(t:Tile)"}   Cypher-like, same syntax as the editor's match bar: (n), (n:Type), -[:CTX]->, <-[:CTX]-, -[:CTX]-, -[r]->, WHERE n.name = "…" / <> / CONTAINS / STARTS WITH / ENDS WITH. Returns matched node names.
+- {"action":"triples",["subject":"…"],["context":"…"],["target":"…"]}   sparse lookup, blanks are wildcards (pepper.query). Returns up to 60 triples.
+- {"action":"bindings","implication":"Tetris_StepDown"}   run the OF pattern now and return its bindings — the way to see why a rule fires, fires twice, or never fires. Multiplied rows mean an under-constrained OF body.
+- {"action":"pattern","name":"Tetris_StepDownOf"}   the body of a pattern.
+- {"action":"concept","name":"Position"}   a concept's types, layer, and every triple touching it (capped).
+- {"action":"pending"}   the pending Choices and their options.
+- {"action":"log",["n":40]}   the most recent engine log entries.
+
+Write actions — only when the author asks, and only to the rule or content layers (never runtime):
+- {"action":"add_concept","name":"…",["types":["Type",…]],["layer":"rule"|"content"]}   (default: rule for schema, content for instances — say which)
+- {"action":"add_context","name":"AT_CELL",["subject_type":"Position"],["target_type":"Tile"]}   declares a relation (a Context concept with SUBJECT/TARGET typing)
+- {"action":"add_triple","subject":"…","context":"…","target":"…",["layer":"rule"|"content"]}
+- {"action":"add_pattern","name":"…","body":[["s:Type","CTX","t:Type"],["NOT","v:Type","CTX","w:Type"],["NEQ","a","b"],["MINT","v:Type"]]}   body items are triples; "var:Type" binds, bare tokens are literals
+- {"action":"add_implication","name":"…","of":"PatternName","generates":"PatternName"}   both patterns must exist (add them first in the same block)
+- {"action":"remove","name":"…"}   a concept, pattern or implication — only when the author plainly asks
+
+Play actions — the pepper contract, exactly one triple per fulfilled Choice:
+- {"action":"play","choice":"Choice12","option":"Down"}   the choice must be pending and the option one of its OF options; pepper validates
+- {"action":"fire"}   run fireToQuiescence now (auto-fire usually makes this unnecessary)
+
+Rules of conduct: state is always queryable — never guess what the artifact says when you can read it. Prefer one read action and a sharp question to a long speculation. Never write a CHOSE triple yourself; play through the play action. Never add to the runtime layer. Never contradict the layer model or the good patterns from the documentation; when the author's rule violates an antipattern, say which one and why. When you author a rule, show the OF/GEN bodies in the text as well as in the block, and name the guard that keeps it from firing more than once per binding.
+
+Example:
+I'll check what the step rule is binding to right now.
+\`\`\`salt-actions
+[{"action":"bindings","implication":"Tetris_StepDown"}]
+\`\`\``;
+
+function shakerDocsText() {
+  const el = document.querySelector("#docs-overlay .docs-panel");
+  if (!el) return "";
+  return (el.innerText || el.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// A compact, honest picture of the artifact. Schema in full (it's the
+// ontology — small and the thing Shaker reasons about); instances by type
+// with a sample; runtime by counts only.
+function shakerDigest() {
+  const g = state && state.graph;
+  if (!g) return "(no graph)";
+  const lines = [];
+  const byLayer = {};
+  for (const c of g.concepts.values()) byLayer[c.layer] = (byLayer[c.layer] || 0) + 1;
+  const xByLayer = {};
+  for (const x of g.contexts) xByLayer[x.layer] = (xByLayer[x.layer] || 0) + 1;
+  lines.push(`Concepts by layer: ${JSON.stringify(byLayer)}. Triples by layer: ${JSON.stringify(xByLayer)}. Patterns: ${g.patterns.size}.`);
+  if (state.importedBundles && state.importedBundles.size)
+    lines.push(`Loaded bundles: ${[...state.importedBundles.values()].map(b => b.name).join(", ")}.`);
+  // relation declarations
+  const rels = [];
+  for (const c of g.concepts.values()) {
+    if (!g.isA(c.name, "Context")) continue;
+    const s = g.contextsFrom(c.name, "SUBJECT").map(x => x.target).join("|") || "Concept";
+    const t = g.contextsFrom(c.name, "TARGET").map(x => x.target).join("|") || "Concept";
+    rels.push(`${c.name}: ${s} → ${t}`);
+  }
+  if (rels.length) lines.push("Relations (name: subject type → target type):\n  " + rels.slice(0, 120).join("\n  "));
+  // type hierarchy for non-runtime, non-relation concepts
+  const schema = [], instances = {};
+  const meta = new Set(["Concept", "Context", "Pattern", "Implication"]);
+  for (const c of g.concepts.values()) {
+    if (g.isA(c.name, "Context") || g.isA(c.name, "Implication") || meta.has(c.name)) continue;
+    const types = g.contextsFrom(c.name, "IS").map(x => x.target).filter(t => t !== "Concept");
+    if (c.layer === "content" || c.layer === "runtime") {
+      const key = (c.layer === "runtime" ? "runtime " : "") + (types[0] || "untyped");
+      (instances[key] = instances[key] || []).push(c.name);
+    } else {
+      schema.push(`${c.name}${types.length ? " IS " + types.join(", ") : ""} [${c.layer}]`);
+    }
+  }
+  if (schema.length) lines.push("Types (schema concepts):\n  " + schema.slice(0, 250).join("\n  ") + (schema.length > 250 ? `\n  … ${schema.length - 250} more` : ""));
+  const inst = Object.entries(instances).map(([k, v]) => `${k}: ${v.length}${v.length <= 12 ? " (" + v.join(", ") + ")" : " (e.g. " + v.slice(0, 6).join(", ") + ", …)"}`);
+  if (inst.length) lines.push("Instances by type:\n  " + inst.join("\n  "));
+  // patterns and implications in full — except parametric families (RowFull_0 …
+  // RowFull_24), which collapse to one representative with the member range.
+  const family = (name) => name.replace(/_\d+(?=(_|$))/g, "_N");
+  const collapse = (entries) => {   // entries: [{name, text}] → lines
+    const groups = new Map();
+    for (const e of entries) { const k = family(e.name); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); }
+    const out = [];
+    for (const [k, members] of groups) {
+      if (members.length === 1 || k === members[0].name) out.push(...members.map(m => m.text));
+      else {
+        const nums = members.map(m => (m.name.match(/_(\d+)(?=(_|$))/) || [])[1]).filter(Boolean).map(Number);
+        out.push(`${k} (${members.length} members, N = ${Math.min(...nums)}…${Math.max(...nums)}; shown as ${members[0].name}): ${members[0].text.slice(members[0].name.length + 2)}`);
+      }
+    }
+    return out;
+  };
+  const pats = [];
+  for (const p of g.patterns.values()) pats.push({ name: p.name, text: `${p.name}: ${JSON.stringify(p.body)}` });
+  const patLines = collapse(pats);
+  if (patLines.length) lines.push("Patterns:\n  " + patLines.slice(0, 150).join("\n  ") + (patLines.length > 150 ? `\n  … ${patLines.length - 150} more` : ""));
+  const impls = [];
+  for (const c of g.conceptsOfType("Implication")) {
+    const of = g.contextsFrom(c.name, "OF").map(x => x.target)[0];
+    const gen = g.contextsFrom(c.name, "GENERATES").map(x => x.target)[0];
+    impls.push({ name: c.name, text: `${c.name}: OF ${of} GENERATES ${gen}` });
+  }
+  if (impls.length) lines.push("Implications:\n  " + collapse(impls).join("\n  "));
+  const pend = (typeof findPendingSolicitations === "function") ? findPendingSolicitations(g) : [];
+  if (pend.length) lines.push("Pending choices:\n  " + pend.slice(0, 20).map(p => `${p.choice}: ${p.options.join(" | ")}`).join("\n  "));
+  const log = (state.log || []).slice(0, 25).map(e => `[${e.kind}] ${String(e.html).replace(/<[^>]+>/g, "")}`);
+  if (log.length) lines.push("Recent log (newest first):\n  " + log.join("\n  "));
+  if (shaker.lastQuiescent) lines.push(`Last fire: ${JSON.stringify(shaker.lastQuiescent)}`);
+  if (shaker.ledger.length) lines.push(`Shaker has authored ${shaker.ledger.reduce((n, b) => n + b.items.length, 0)} things this session (see AUTHORED_BY Shaker).`);
+  return lines.join("\n\n");
+}
+
+function shakerSystemPrompt() {
+  return `You are Shaker, the assistant inside salt — a typed-triple rule engine that runs card games in one HTML file. salt writes the rules, pepper brokers the inputs, the artifact holds the truth, and you shake things loose: you explain why rules fire or don't, find the antipattern behind a phantom firing, draft rules the author asks for, and play the game through pepper when asked.
+
+You know the engine only through the documentation and the live digest below, plus whatever you read with actions. The documentation is authoritative; the digest is a snapshot taken when this message was sent.
+
+How you work:
+- Lead with the answer. Short replies; this is a tool, not an essay.
+- Read before you speculate. One bindings or query action beats three guesses.
+- When explaining a firing, name the implication, the binding that fired, and the triple it generated. When a rule multiplies, say which OF variable is under-constrained.
+- When drafting a rule, follow the good patterns (current-state via NOT newer UPDATES, bundle for structure / runtime for state, quiescent over per-edge) and say which antipattern you avoided.
+- Only write when asked. Say what you are about to write in a sentence before the block.
+- Use the artifact's own names exactly. Identifiers are letters, digits, underscores, hyphens — no spaces.
+
+${SHAKER_ACTION_DOCS}
+
+=== DOCUMENTATION ===
+${shakerDocsText()}
+
+=== LIVE DIGEST ===
+${shakerDigest()}`;
+}
+
+// ---------------------------------------------------------------------------
+// actions — parse, read, apply, undo
+// ---------------------------------------------------------------------------
+const SHAKER_READS  = new Set(["query", "triples", "bindings", "pattern", "concept", "pending", "log"]);
+const SHAKER_WRITES = new Set(["add_concept", "add_context", "add_triple", "add_pattern", "add_implication", "remove"]);
+const SHAKER_PLAYS  = new Set(["play", "fire"]);
+
+function shakerExtractActions(reply) {
+  const m = String(reply || "").match(/```salt-actions\s*([\s\S]*?)(?:```|$)/i);
+  if (!m) return { prose: reply, actions: [], truncated: false };
+  const prose = reply.slice(0, m.index).trim();
+  const raw = m[1].trim();
+  let actions = [], truncated = false;
+  try { const v = JSON.parse(raw); actions = Array.isArray(v) ? v : v && Array.isArray(v.actions) ? v.actions : [v]; }
+  catch (e) {
+    // cut off mid-block: salvage every complete object
+    let depth = 0, start = -1, inStr = false, escp = false;
+    for (let i = 0; i < raw.length; i++) {
+      const ch = raw[i];
+      if (inStr) { if (escp) escp = false; else if (ch === "\\") escp = true; else if (ch === '"') inStr = false; continue; }
+      if (ch === '"') { inStr = true; continue; }
+      if (ch === "{") { if (depth === 0) start = i; depth++; }
+      else if (ch === "}") { depth--; if (depth === 0 && start >= 0) { try { actions.push(JSON.parse(raw.slice(start, i + 1))); } catch (e2) { /* */ } start = -1; } }
+    }
+    truncated = true;
+  }
+  return { prose, actions: actions.filter(a => a && typeof a === "object" && typeof a.action === "string"), truncated };
+}
+
+const shakerTripleStr = (c) => `${c.subject} —${c.name}→ ${c.target} [${c.layer}]`;
+
+function shakerRead(a) {
+  const g = state.graph;
+  switch (a.action) {
+    case "query": {
+      if (typeof executeGraphQuery !== "function") return "query unavailable";
+      const r = executeGraphQuery(a.match || "");
+      if (!r.ok) return `query error: ${r.error}`;
+      const names = r.nodes ? [...r.nodes] : [];
+      return `${r.matches} match${r.matches === 1 ? "" : "es"}; nodes: ${names.slice(0, 80).join(", ")}${names.length > 80 ? ` … ${names.length - 80} more` : ""}`;
+    }
+    case "triples": {
+      const rows = pepper.query(a.subject || null, a.context || null, a.target || null);
+      return `${rows.length} triple${rows.length === 1 ? "" : "s"}\n` + rows.slice(0, 60).map(shakerTripleStr).join("\n") + (rows.length > 60 ? `\n… ${rows.length - 60} more` : "");
+    }
+    case "bindings": {
+      const impl = a.implication;
+      const ofName = g.contextsFrom(impl, "OF").map(x => x.target)[0];
+      if (!ofName) return `${impl} is not an implication (no OF)`;
+      const pat = g.patterns.get(ofName);
+      if (!pat) return `OF pattern ${ofName} not found`;
+      let b;
+      try { b = matchBody(g, pat.body); } catch (e) { return `match error: ${e.message}`; }
+      const shown = b.slice(0, 20).map(x => JSON.stringify(x));
+      return `${impl}: OF ${ofName} binds ${b.length} time${b.length === 1 ? "" : "s"} now.\nbody: ${JSON.stringify(pat.body)}\n` + shown.join("\n") + (b.length > 20 ? `\n… ${b.length - 20} more` : "");
+    }
+    case "pattern": {
+      const p = g.patterns.get(a.name);
+      return p ? `${p.name} [${p.layer || "rule"}]: ${JSON.stringify(p.body)}${p.aliases ? "\naliases: " + JSON.stringify(p.aliases) : ""}` : `no pattern named ${a.name}`;
+    }
+    case "concept": {
+      const c = g.concepts.get(a.name);
+      if (!c) return `no concept named ${a.name}`;
+      const rows = g.contexts.filter(x => x.subject === a.name || x.target === a.name || x.name === a.name);
+      return `${c.name} [${c.layer}] types: ${c.types.join(", ") || "—"} folder: ${c.folder || "—"}\n${rows.length} touching triples\n` + rows.slice(0, 60).map(shakerTripleStr).join("\n") + (rows.length > 60 ? `\n… ${rows.length - 60} more` : "");
+    }
+    case "pending": {
+      const p = typeof findPendingSolicitations === "function" ? findPendingSolicitations(g) : [];
+      return p.length ? p.map(x => `${x.choice}: ${x.options.join(" | ")}`).join("\n") : "no pending choices";
+    }
+    case "log": {
+      const n = Math.min(Number(a.n) || 40, 120);
+      return (state.log || []).slice(0, n).map(e => `[${e.kind}] ${String(e.html).replace(/<[^>]+>/g, "")}`).join("\n") || "log empty";
+    }
+    default: return `unknown read ${a.action}`;
+  }
+}
+
+// Describe a write/play in plain words (shown before applying, and in the ledger).
+function shakerDescribe(a) {
+  switch (a.action) {
+    case "add_concept":     return `add concept ${a.name}${a.types && a.types.length ? " IS " + a.types.join(", ") : ""} [${a.layer || "rule"}]`;
+    case "add_context":     return `declare relation ${a.name}: ${a.subject_type || "Concept"} → ${a.target_type || "Concept"}`;
+    case "add_triple":      return `add triple ${a.subject} —${a.context}→ ${a.target} [${a.layer || "content"}]`;
+    case "add_pattern":     return `add pattern ${a.name} (${(a.body || []).length} items)`;
+    case "add_implication": return `add implication ${a.name}: OF ${a.of} GENERATES ${a.generates}`;
+    case "remove":          return `remove ${a.name}`;
+    case "play":            return `play ${a.choice} ← ${a.option}`;
+    case "fire":            return "fire to quiescence";
+    default:                return a.action;
+  }
+}
+
+const SHAKER_AUTHOR = "Shaker", SHAKER_REL = "AUTHORED_BY";
+function shakerEnsureVocabulary(items) {
+  const g = state.graph;
+  if (!g.concepts.has(SHAKER_REL)) {
+    g.addConcept(SHAKER_REL, ["Context"], "rule");
+    items.push({ kind: "concept", name: SHAKER_REL });
+  }
+  if (!g.concepts.has(SHAKER_AUTHOR)) {
+    g.addConcept(SHAKER_AUTHOR, ["Concept"], "rule");
+    items.push({ kind: "concept", name: SHAKER_AUTHOR });
+  }
+}
+function shakerStamp(name, items) {
+  shakerEnsureVocabulary(items);
+  const c = state.graph.addContext(SHAKER_REL, name, SHAKER_AUTHOR, "rule");
+  if (c) items.push({ kind: "triple", key: c.key() });
+}
+
+// Apply one write or play. Returns {ok, note}. Records what it created in
+// `items` so the block can be undone as a unit.
+function shakerApply(a, items) {
+  const g = state.graph;
+  const layerOf = (dflt) => (a.layer === "runtime" ? dflt : (a.layer === "rule" || a.layer === "content" || a.layer === "engine") ? (a.layer === "engine" ? "rule" : a.layer) : dflt);
+  const ident = (s) => typeof isValidIdentifier === "function" ? isValidIdentifier(s) : /^[A-Za-z_][A-Za-z0-9_-]*$/.test(s || "");
+  switch (a.action) {
+    case "add_concept": {
+      if (!ident(a.name)) return { ok: false, note: `bad identifier ${a.name}` };
+      if (g.concepts.has(a.name)) return { ok: true, note: `${a.name} already exists — reused` };
+      const types = (a.types || []).filter(t => g.concepts.has(t));
+      g.addConcept(a.name, types.length ? types : ["Concept"], layerOf("rule"));
+      items.push({ kind: "concept", name: a.name });
+      shakerStamp(a.name, items);
+      return { ok: true, note: shakerDescribe(a) };
+    }
+    case "add_context": {
+      if (!ident(a.name)) return { ok: false, note: `bad identifier ${a.name}` };
+      if (g.concepts.has(a.name)) return { ok: true, note: `${a.name} already exists — reused` };
+      g.addConcept(a.name, ["Context"], "rule");
+      items.push({ kind: "concept", name: a.name });
+      const s = a.subject_type || "Concept", t = a.target_type || "Concept";
+      if (g.concepts.has(s)) { const c = g.addContext("SUBJECT", a.name, s, "rule"); if (c) items.push({ kind: "triple", key: c.key() }); }
+      if (g.concepts.has(t)) { const c = g.addContext("TARGET",  a.name, t, "rule"); if (c) items.push({ kind: "triple", key: c.key() }); }
+      shakerStamp(a.name, items);
+      return { ok: true, note: shakerDescribe(a) };
+    }
+    case "add_triple": {
+      for (const k of ["subject", "context", "target"]) if (!g.concepts.has(a[k])) return { ok: false, note: `unknown ${k} ${a[k]} — add the concept first` };
+      if (a.context === "CHOSE") return { ok: false, note: "CHOSE is pepper's edge — use the play action" };
+      const c = g.addContext(a.context, a.subject, a.target, layerOf("content"));
+      if (!c) return { ok: true, note: "triple already present" };
+      items.push({ kind: "triple", key: c.key() });
+      return { ok: true, note: shakerDescribe(a) };
+    }
+    case "add_pattern": {
+      if (!ident(a.name)) return { ok: false, note: `bad identifier ${a.name}` };
+      if (!Array.isArray(a.body) || !a.body.length) return { ok: false, note: `pattern ${a.name} needs a body` };
+      if (g.patterns.has(a.name)) return { ok: false, note: `pattern ${a.name} already exists — pick another name or remove it first` };
+      const body = a.body.map(item => Array.isArray(item) ? item.slice() : item);
+      g.addPattern(a.name, body);
+      const p = g.patterns.get(a.name);
+      if (p) { p.layer = "rule"; p.folder = "Shaker"; }
+      items.push({ kind: "pattern", name: a.name });
+      return { ok: true, note: shakerDescribe(a) };
+    }
+    case "add_implication": {
+      if (!ident(a.name)) return { ok: false, note: `bad identifier ${a.name}` };
+      if (g.concepts.has(a.name)) return { ok: false, note: `${a.name} already exists` };
+      if (!g.patterns.has(a.of)) return { ok: false, note: `OF pattern ${a.of} not found` };
+      if (!g.patterns.has(a.generates)) return { ok: false, note: `GENERATES pattern ${a.generates} not found` };
+      g.addConcept(a.name, ["Implication"], "rule");
+      items.push({ kind: "concept", name: a.name });
+      const c1 = g.addContext("OF", a.name, a.of, "rule"); if (c1) items.push({ kind: "triple", key: c1.key() });
+      const c2 = g.addContext("GENERATES", a.name, a.generates, "rule"); if (c2) items.push({ kind: "triple", key: c2.key() });
+      const c = g.concepts.get(a.name); if (c) c.folder = "Shaker";
+      shakerStamp(a.name, items);
+      return { ok: true, note: shakerDescribe(a) };
+    }
+    case "remove": {
+      const c = g.concepts.get(a.name);
+      if (c && c.layer === "engine") return { ok: false, note: `${a.name} is engine content` };
+      if (!c && !g.patterns.has(a.name)) return { ok: false, note: `nothing named ${a.name}` };
+      // snapshot for undo
+      const snap = { kind: "removed", name: a.name, concept: c ? { types: c.types.slice(), layer: c.layer, folder: c.folder } : null,
+        pattern: g.patterns.has(a.name) ? { body: g.patterns.get(a.name).body.map(b => Array.isArray(b) ? b.slice() : b), aliases: g.patterns.get(a.name).aliases, layer: g.patterns.get(a.name).layer, folder: g.patterns.get(a.name).folder } : null,
+        triples: g.contexts.filter(x => x.subject === a.name || x.target === a.name || x.name === a.name).map(x => ({ name: x.name, subject: x.subject, target: x.target, layer: x.layer, origin: x.originBundleId })) };
+      if (typeof deleteConcept === "function" && c) deleteConcept(a.name); else { g.patterns.delete(a.name); }
+      g._rebuildIndices();
+      items.push(snap);
+      return { ok: true, note: shakerDescribe(a) };
+    }
+    case "play": {
+      const ok = pepper.notifyInput(a.choice, a.option);
+      if (ok) items.push({ kind: "played", choice: a.choice, option: a.option });
+      return { ok, note: ok ? shakerDescribe(a) : `pepper rejected ${a.choice} ← ${a.option} (not pending, or not an option)` };
+    }
+    case "fire": {
+      const r = fireToQuiescence();
+      return { ok: true, note: `fired ${r.fires} · +${r.newC}c +${r.newX}t · ${r.passes} pass${r.passes === 1 ? "" : "es"}` };
+    }
+    default: return { ok: false, note: `unknown action ${a.action}` };
+  }
+}
+
+// Undo a block: remove what it created, restore what it removed. A played
+// CHOSE is not undone (the cascade already happened); it's reported instead.
+function shakerUndo(block) {
+  const g = state.graph;
+  let undone = 0, kept = 0;
+  withAutoFireSuppressed(() => {
+    for (const it of block.items.slice().reverse()) {
+      if (it.kind === "triple") {
+        const c = g.contexts.find(x => x.key() === it.key);
+        if (c) { g.removeContext(c); undone++; }
+      } else if (it.kind === "concept") {
+        if (g.concepts.has(it.name)) {
+          g.concepts.delete(it.name);
+          g.contexts = g.contexts.filter(x => x.subject !== it.name && x.target !== it.name && x.name !== it.name);
+          g._rebuildIndices();
+          undone++;
+        }
+      } else if (it.kind === "pattern") {
+        if (g.patterns.delete(it.name)) undone++;
+      } else if (it.kind === "removed") {
+        if (it.concept && !g.concepts.has(it.name)) { g.addConcept(it.name, [], it.concept.layer); const c = g.concepts.get(it.name); c.types = it.concept.types; c.folder = it.concept.folder; }
+        if (it.pattern && !g.patterns.has(it.name)) { g.addPattern(it.name, it.pattern.body); const p = g.patterns.get(it.name); p.aliases = it.pattern.aliases; p.layer = it.pattern.layer; p.folder = it.pattern.folder; }
+        for (const t of it.triples) if (g.concepts.has(t.subject) && g.concepts.has(t.target)) g.addContext(t.name, t.subject, t.target, t.layer, t.origin);
+        undone++;
+      } else if (it.kind === "played") kept++;
+    }
+  });
+  block.undone = true;
+  logEntry("del", `shaker undo · ${undone} reverted${kept ? ` · ${kept} play${kept === 1 ? "" : "s"} kept` : ""}`);
+  render();
+  return { undone, kept };
+}
+
+// ---------------------------------------------------------------------------
+// shaker — state, levels, the conversation loop
+// ---------------------------------------------------------------------------
+const SHAKER_LEVELS = [
+  { id: "off",     name: "Off",     blurb: "Shaker only answers when asked, and only reads." },
+  { id: "explain", name: "Explain", blurb: "Reads freely; shows any edit it proposes but never applies it." },
+  { id: "suggest", name: "Suggest", blurb: "Proposes edits and plays as blocks you apply with one tap." },
+  { id: "author",  name: "Author",  blurb: "Applies edits and plays as it goes. Undo is one tap. Nudges you when a fire halts at the budget." },
+];
+const SHAKER_OPENERS = [
+  { label: "Why did that fire?",    text: "Look at the most recent fire in the log. Which implication fired, on which binding, and what did it generate? Was that intended?" },
+  { label: "Why didn't it fire?",   text: "I expected [implication name] to fire and it didn't. Read its bindings and tell me which triple in the OF body has no match." },
+  { label: "Phantom firings",       text: "Something is firing more times than it should. Check the implications whose OF bodies bind more than once and tell me which variable is under-constrained in each." },
+  { label: "Budget halt",           text: "The last fire halted at the budget. Which rule is cascading, and what guard is missing?" },
+  { label: "Write a rule",          text: "Write a rule that [describe the behavior]. Show me the OF and GEN bodies, name the guard, and say which antipattern you avoided." },
+  { label: "Review my rules",       text: "Read every implication in the rule layer against the Good patterns and Antipatterns. Which ones violate something, and what is the fix?" },
+  { label: "Play a turn",           text: "Look at the pending choices and play the best next option. Say why in a sentence." },
+  { label: "What is this ontology?", text: "In five sentences: what does this ontology model, what are its main types, what drives the loop, and what inputs does it wait on?" },
+];
+
+const shaker = {
+  messages: [],      // [{role, content}] — the model-facing transcript
+  view: [],          // [{who:"you"|"shaker"|"note"|"tool", text, block?}] — the rendered one
+  ledger: [],        // [{id, at, summary, items, undone}]
+  lastQuiescent: null,
+  busy: false,
+  abort: null,
+  open: false,
+  lastNudgeAt: 0,
+
+  level() { try { return localStorage.getItem(SHAKER_LEVEL_KEY) || "explain"; } catch (e) { return "explain"; } },
+  setLevel(l) { try { localStorage.setItem(SHAKER_LEVEL_KEY, l); } catch (e) { /* */ } this.renderLevel(); },
+
+  // Ask Shaker. Runs up to 4 rounds: the model may answer with read actions,
+  // whose results go back as a user turn, until it answers with prose (and
+  // optionally one write/play block).
+  async ask(text) {
+    if (this.busy) return;
+    this.busy = true;
+    this.abort = new AbortController();
+    this.view.push({ who: "you", text });
+    this.messages.push({ role: "user", content: text });
+    this.renderMessages();
+    const system = shakerSystemPrompt();
+    try {
+      for (let round = 0; round < 4; round++) {
+        const pending = { who: "shaker", text: "", thinking: true };
+        this.view.push(pending); this.renderMessages();
+        const { text: reply } = await shakerComplete({ system, messages: this.messages, signal: this.abort.signal });
+        this.messages.push({ role: "assistant", content: reply });
+        const { prose, actions, truncated } = shakerExtractActions(reply);
+        pending.thinking = false; pending.text = prose || (actions.length ? "" : reply);
+        const reads  = actions.filter(a => SHAKER_READS.has(a.action));
+        const writes = actions.filter(a => SHAKER_WRITES.has(a.action) || SHAKER_PLAYS.has(a.action));
+        if (reads.length) {
+          const results = reads.map(a => `## ${JSON.stringify(a)}\n${shakerRead(a)}`).join("\n\n");
+          this.view.push({ who: "tool", text: reads.map(a => a.action + (a.match ? " " + a.match : a.implication ? " " + a.implication : a.name ? " " + a.name : "")).join(" · ") });
+          this.messages.push({ role: "user", content: `Results of your read actions:\n\n${results}\n\nContinue. Answer the author now unless you need one more read.` });
+          if (writes.length) this.offer(writes, pending);
+          this.renderMessages();
+          continue;
+        }
+        if (writes.length) this.offer(writes, pending);
+        if (truncated) pending.text += "\n\n(the actions block was cut off — only the complete actions were kept)";
+        this.renderMessages();
+        break;
+      }
+    } catch (e) {
+      const last = this.view[this.view.length - 1];
+      if (last && last.who === "shaker" && last.thinking) this.view.pop();
+      this.view.push({ who: "note", text: e.name === "AbortError" ? "stopped" : e.message });
+      this.renderMessages();
+    } finally {
+      this.busy = false; this.abort = null;
+      this.renderMessages();
+    }
+  },
+
+  // A block of writes/plays, gated by level: explain shows, suggest offers,
+  // author applies.
+  offer(writes, msg) {
+    const level = this.level();
+    const block = { id: "shk-" + Date.now().toString(36), at: Date.now(), actions: writes, items: [], applied: false, undone: false, notes: [],
+      summary: writes.map(shakerDescribe).join("; ") };
+    msg.block = block;
+    if (level === "author") this.applyBlock(block);
+    else if (level === "off") block.notes.push("Shaker is Off — nothing was applied.");
+  },
+
+  applyBlock(block) {
+    if (block.applied) return;
+    const notes = [];
+    withAutoFireSuppressed(() => {
+      for (const a of block.actions) {
+        if (a.action === "play" || a.action === "fire") continue;   // plays go after authoring, outside suppression
+        const r = shakerApply(a, block.items);
+        notes.push((r.ok ? "✓ " : "✗ ") + r.note);
+      }
+    });
+    for (const a of block.actions) {
+      if (a.action !== "play" && a.action !== "fire") continue;
+      const r = shakerApply(a, block.items);
+      notes.push((r.ok ? "✓ " : "✗ ") + r.note);
+    }
+    block.applied = true; block.notes = notes;
+    this.ledger.push(block);
+    logEntry("add", `shaker · ${esc(block.summary).slice(0, 160)}`);
+    if (typeof scheduleAutoFire === "function") scheduleAutoFire();
+    render();
+    this.renderMessages(); this.renderLedger();
+    // tell the model what actually happened, so its next turn is honest
+    this.messages.push({ role: "user", content: `Applied:\n${notes.join("\n")}` });
+    this.messages.push({ role: "assistant", content: "Noted." });
+  },
+
+  undoAll() {
+    for (const b of this.ledger.slice().reverse()) if (b.applied && !b.undone) shakerUndo(b);
+    this.renderMessages(); this.renderLedger();
+  },
+
+  clear() {
+    if (this.abort) this.abort.abort();
+    this.messages = []; this.view = [];
+    this.renderMessages();
+  },
+
+  // --- flow: a nudge when salt halts at the budget (author level only) ---
+  watch() {
+    pepper.subscribe("Quiescent", (p) => {
+      if (p && typeof p.fires === "number") this.lastQuiescent = p;
+      if (p && p.halted) this.nudge(`fire halted at ${p.halted}`);
+    });
+  },
+  nudge(why) {
+    const now = Date.now();
+    if (now - this.lastNudgeAt < 20000) return;
+    this.lastNudgeAt = now;
+    this.view.push({ who: "note", text: `${why} — ask "Budget halt" to have Shaker look.`, nudge: true });
+    this.renderMessages();
+    const btn = document.getElementById("shaker-toggle");
+    if (btn && !this.open) btn.classList.add("nudge");
+    if (this.level() === "author" && !this.busy && shakerLoadConfig()) this.ask(SHAKER_OPENERS[3].text);
+  },
+
+  // --- panel ---
+  init() {
+    const toggle = document.getElementById("shaker-toggle");
+    const panel  = document.getElementById("shaker-panel");
+    if (!toggle || !panel) return;
+    toggle.addEventListener("click", () => this.setOpen(!this.open));
+    document.getElementById("shaker-close").addEventListener("click", () => this.setOpen(false));
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && this.open && !document.getElementById("docs-overlay").classList.contains("open")) this.setOpen(false); });
+    const input = document.getElementById("shaker-input");
+    const send = () => { const t = input.value.trim(); if (!t || this.busy) return; input.value = ""; this.ask(t); };
+    document.getElementById("shaker-send").addEventListener("click", send);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+    document.getElementById("shaker-stop").addEventListener("click", () => { if (this.abort) this.abort.abort(); });
+    document.getElementById("shaker-clear").addEventListener("click", () => this.clear());
+    document.getElementById("shaker-settings-toggle").addEventListener("click", () => {
+      const s = document.getElementById("shaker-settings"); s.classList.toggle("open");
+      if (s.classList.contains("open")) this.renderSettings();
+    });
+    document.getElementById("shaker-openers").innerHTML = SHAKER_OPENERS.map((o, i) => `<button type="button" data-opener="${i}" title="${esc(o.text)}">${esc(o.label)}</button>`).join("");
+    document.getElementById("shaker-openers").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-opener]"); if (!b) return;
+      const o = SHAKER_OPENERS[Number(b.dataset.opener)];
+      if (/\[/.test(o.text)) { input.value = o.text; input.focus(); } else this.ask(o.text);
+    });
+    document.getElementById("shaker-level").innerHTML = SHAKER_LEVELS.map(l => `<button type="button" data-level="${l.id}" title="${esc(l.blurb)}">${l.name}</button>`).join("");
+    document.getElementById("shaker-level").addEventListener("click", (e) => { const b = e.target.closest("[data-level]"); if (b) this.setLevel(b.dataset.level); });
+    document.getElementById("shaker-undo-all").addEventListener("click", () => this.undoAll());
+    document.getElementById("shaker-messages").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-block-apply],[data-block-undo]"); if (!b) return;
+      const id = b.dataset.blockApply || b.dataset.blockUndo;
+      const msg = this.view.find(m => m.block && m.block.id === id);
+      if (!msg) return;
+      if (b.dataset.blockApply) this.applyBlock(msg.block);
+      else { shakerUndo(msg.block); this.renderMessages(); this.renderLedger(); }
+    });
+    this.renderLevel(); this.renderMessages(); this.renderLedger(); this.renderSettings();
+    this.watch();
+  },
+  setOpen(v) {
+    this.open = v;
+    document.getElementById("shaker-panel").classList.toggle("open", v);
+    document.body.classList.toggle("shaker-open", v);
+    document.getElementById("shaker-toggle").classList.toggle("on", v);
+    document.getElementById("shaker-toggle").classList.remove("nudge");
+    if (v) { const i = document.getElementById("shaker-input"); if (i) i.focus(); }
+  },
+  renderLevel() {
+    const l = this.level();
+    document.querySelectorAll("#shaker-level [data-level]").forEach(b => b.classList.toggle("on", b.dataset.level === l));
+    const lv = SHAKER_LEVELS.find(x => x.id === l);
+    document.getElementById("shaker-level-blurb").textContent = lv ? lv.blurb : "";
+  },
+  renderBlock(block) {
+    const level = this.level();
+    const rows = block.actions.map(a => `<div class="shk-action"><code>${esc(shakerDescribe(a))}</code></div>`).join("");
+    const notes = block.notes.length ? `<div class="shk-notes">${block.notes.map(n => `<div>${esc(n)}</div>`).join("")}</div>` : "";
+    let controls = "";
+    if (block.undone) controls = `<span class="shk-tag">undone</span>`;
+    else if (block.applied) controls = `<button type="button" data-block-undo="${block.id}">undo</button>`;
+    else if (level === "suggest" || level === "author") controls = `<button type="button" data-block-apply="${block.id}" class="primary">apply</button>`;
+    else controls = `<span class="shk-tag">${level === "off" ? "off" : "proposal"}</span>`;
+    return `<div class="shk-block${block.applied ? " applied" : ""}${block.undone ? " undone" : ""}"><div class="shk-block-head"><span>${block.actions.length} action${block.actions.length === 1 ? "" : "s"}</span>${controls}</div>${rows}${notes}</div>`;
+  },
+  renderMessages() {
+    const root = document.getElementById("shaker-messages");
+    if (!root) return;
+    const md = (t) => esc(t)
+      .replace(/```[a-z-]*\n([\s\S]*?)```/g, (m, c) => `<pre>${c}</pre>`)
+      .replace(/`([^`\n]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/\n/g, "<br>");
+    root.innerHTML = this.view.map(m => {
+      if (m.who === "tool") return `<div class="shk-msg tool">read · ${esc(m.text)}</div>`;
+      if (m.who === "note") return `<div class="shk-msg note${m.nudge ? " nudge" : ""}">${esc(m.text)}</div>`;
+      if (m.who === "you")  return `<div class="shk-msg you">${md(m.text)}</div>`;
+      return `<div class="shk-msg shaker${m.thinking ? " thinking" : ""}">${m.thinking ? "<span class=\"shk-dots\">shaking</span>" : md(m.text)}${m.block ? this.renderBlock(m.block) : ""}</div>`;
+    }).join("") || `<div class="shk-msg note">Shaker reads the artifact and the docs. Ask why a rule fired, have it draft one, or let it play. ${shakerLoadConfig() ? "" : "Add a connection in settings (⚙) to begin."}</div>`;
+    root.scrollTop = root.scrollHeight;
+    document.getElementById("shaker-stop").style.display = this.busy ? "" : "none";
+    document.getElementById("shaker-send").disabled = this.busy;
+  },
+  renderLedger() {
+    const root = document.getElementById("shaker-ledger");
+    if (!root) return;
+    const live = this.ledger.filter(b => b.applied && !b.undone);
+    const n = live.reduce((s, b) => s + b.items.filter(i => i.kind === "concept" || i.kind === "pattern" || i.kind === "removed").length, 0);
+    root.textContent = live.length ? `${live.length} block${live.length === 1 ? "" : "s"} · ${n} thing${n === 1 ? "" : "s"} authored` : "nothing authored yet";
+    document.getElementById("shaker-undo-all").style.display = live.length ? "" : "none";
+  },
+  renderSettings() {
+    const root = document.getElementById("shaker-settings");
+    if (!root) return;
+    const c = shakerLoadConfig() || shakerDefaultConfig("anthropic");
+    const p = shakerProvider(c.provider);
+    root.innerHTML = `
+      <label>provider <select id="shk-provider">${SHAKER_PROVIDERS.map(x => `<option value="${x.id}"${x.id === c.provider ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>
+      <div class="shk-note">${esc(p.note)} The key is kept in this browser's localStorage and sent only to the base URL.</div>
+      <label>base URL <input id="shk-baseurl" value="${esc(c.baseUrl)}" spellcheck="false"></label>
+      <label>model <input id="shk-model" value="${esc(c.model)}" spellcheck="false"></label>
+      <label>API key <input id="shk-key" type="password" value="${esc(c.apiKey || "")}" placeholder="${p.needsKey ? "required" : "optional"}"></label>
+      <div class="shk-row"><button type="button" id="shk-save" class="primary">save</button><button type="button" id="shk-test">test</button><button type="button" id="shk-forget">forget key</button><span id="shk-status"></span></div>`;
+    const read = () => ({ provider: root.querySelector("#shk-provider").value, baseUrl: root.querySelector("#shk-baseurl").value.trim(), model: root.querySelector("#shk-model").value.trim(), apiKey: root.querySelector("#shk-key").value.trim() });
+    root.querySelector("#shk-provider").addEventListener("change", (e) => { const d = shakerDefaultConfig(e.target.value); root.querySelector("#shk-baseurl").value = d.baseUrl; root.querySelector("#shk-model").value = d.model; root.querySelector(".shk-note").textContent = shakerProvider(d.provider).note; });
+    root.querySelector("#shk-save").addEventListener("click", () => { shakerSaveConfig(read()); root.querySelector("#shk-status").textContent = "saved"; this.renderMessages(); });
+    root.querySelector("#shk-forget").addEventListener("click", () => { try { localStorage.removeItem(SHAKER_CONFIG_KEY); } catch (e) { /* */ } this.renderSettings(); this.renderMessages(); });
+    root.querySelector("#shk-test").addEventListener("click", async () => {
+      const st = root.querySelector("#shk-status"); st.textContent = "testing…";
+      try { const r = await shakerComplete({ config: read(), system: "Reply with the single word OK.", messages: [{ role: "user", content: "ping" }], maxTokens: 16 }); st.textContent = /ok/i.test(r.text) ? "connected" : "connected (odd reply: " + r.text.slice(0, 40) + ")"; }
+      catch (e) { st.textContent = e.message; }
+    });
+  },
+};
+
 reset();
+shaker.init();
 loadBundlesFromRepo();
 </script>
 </body>

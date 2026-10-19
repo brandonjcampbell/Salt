@@ -2,7 +2,7 @@
 
 **A typed-triple rule engine that runs card games — in one HTML file, with no dependencies.**
 
-> salt writes the rules · pepper brokers the inputs · the artifact holds the truth
+> salt writes the rules · pepper brokers the inputs · the artifact holds the truth · shaker shakes it loose
 
 Open `index.html` in a browser. That's the whole install. Or play with it live: **https://brandonjcampbell.github.io/Salt/**
 
@@ -14,13 +14,14 @@ salt is an experiment in building game logic as an ontology instead of as code. 
 
 There are no flags, no markers, no hidden state. If a thing is true, there's a triple that says so, and you can query it. Debugging is `grep` the artifact.
 
-Three roles, strictly separated:
+Four roles, strictly separated:
 
 | Role | Job | Can write to the graph? |
 |---|---|---|
 | **salt** | The rule layer. Pure implications over the artifact. | Yes — but only via rules that fire. |
 | **pepper** | The input broker. When the artifact mints a `Choice`, pepper is the only thing allowed to resolve it (`choice CHOSE option`), and it validates the choice first. | Yes — but only `CHOSE` triples, only valid ones. |
 | **cartridge** | A specialized pepper UI for one bundle (Tetris, a card game, an ontology readout). Owns the canvas, renders from the artifact, talks to it *only* through pepper. | No — reads only; inputs go through `pep.notifyInput`. |
+| **shaker** | The assistant. A language model briefed with the docs and a live digest of the artifact. Explains why a rule fired (by running its OF body and reading the bindings), drafts rules, plays. | Only the two ways you can: authoring rule/content triples, patterns and implications (never runtime), and playing through `pepper.notifyInput`. Everything it authors is `X AUTHORED_BY Shaker` and undoable. |
 
 ![pepper mode running the Tetris cartridge, with the event log showing each Position triple as it is minted](docs/salt-pepper.png)
 
@@ -60,6 +61,19 @@ salt-session.cartridge.js    derived-scope readout for the session ontology
 ```
 
 Built-in docs (the `docs` button in the header) cover the matcher, the fire budget, compost semantics, and a list of patterns and antipatterns learned the hard way.
+
+## Shaker
+
+The `shaker` button opens a drawer in either mode. Shaker is briefed with the built-in docs — including the antipatterns — and a digest of the loaded artifact, and it reads more on demand with actions (`query`, `triples`, `bindings`, `pattern`, `concept`, `pending`, `log`). When you ask it to change something or to play, it ends its reply with a fenced `salt-actions` block, and what happens next depends on the level you set:
+
+| Level | What Shaker does |
+|---|---|
+| **Off** | Reads only. |
+| **Explain** | Shows proposed edits as a block; never applies them. |
+| **Suggest** | Proposes blocks you apply with one tap. |
+| **Author** | Applies as it goes, undo is one tap, and it investigates on its own when a fire halts at the budget. |
+
+Shaker never writes `CHOSE` itself and never touches the runtime layer. Ask it "why did that fire?" and it runs the implication's OF body and reports the bindings instead of guessing — multiplied bindings are the under-constrained-body bug, named. The connection (Anthropic, any OpenAI-compatible endpoint, or local Ollama) lives in this browser's localStorage only.
 
 ## Why
 

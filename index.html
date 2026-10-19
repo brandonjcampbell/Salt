@@ -4689,7 +4689,7 @@ header.top .project-status .pstat-name::before { content: ""; }
 header.top .project-status .pstat-name { color: var(--ink); }
 header.top .project-status .pstat-name.scratch { color: var(--ink-muted); font-style: normal; }
 header.top .project-status .pstat-name.scratch::after { content: " — name it in Save / Load"; }
-.layer-switcher { gap: 4px; font-family: var(--font-ui); }
+.layer-switcher { display: none !important; }
 .layer-switcher .ls-label { font-size: 11px; }
 .lswitch { padding: 2px 10px; font-size: 12px; border-radius: 10px; }
 main.editor-main { grid-column: 2; grid-row: 2; min-height: 0; }
@@ -5002,7 +5002,7 @@ body[data-mode="pepper"] .project-status, body[data-mode="pepper"] .docs-toggle 
     <p>Type membership lives in the artifact, not on objects. A concept is a <code>Block</code> because some <code>IS</code> triple says so. <code>isA</code> walks <code>IS</code> edges transitively; there is no separate type registry. This is what lets a rule like <code>c:Choice CHOSE o:Option → o IS Chosen</code> actually change what queries see — the type query reads the same edges the rule just wrote.</p>
 
     <h2>Layers</h2>
-    <p>Every Concept, Pattern and Implication lives in exactly one layer, and a triple lives in the highest layer of the two concepts it joins — engine &lt; rule &lt; content &lt; runtime — so an instance's <code>IS</code> edge to its type is content, and a minted Choice's <code>CHOSE</code> edge to a rule-layer option is runtime. The layer is derived, never declared: the layer tabs in the activity bar are a partition.</p>
+    <p>Every Concept, Pattern and Implication lives in exactly one layer, and a triple lives in the highest layer of the two concepts it joins — engine &lt; rule &lt; content &lt; runtime — so an instance's <code>IS</code> edge to its type is content, and a minted Choice's <code>CHOSE</code> edge to a rule-layer option is runtime. The layer is derived, never declared — there is no authoring switch. A new type, relation, pattern or rule is rule; an instance made with <em>+ Instance</em>, a stamp or the node-paint tool is content; a triple follows its ends. The layer tabs in the activity bar are a partition.</p>
     <p>Every Concept and Context lives in one of four layers. <code>bundle</code> is the imported schema you got for free — read-only, deleted only by un-importing the bundle as a unit. <code>rule</code> is your authored schema: predicates, types, implications you wrote yourself. <code>content</code> is the dataset — facts about the world. <code>runtime</code> is disposable: positions minted by gravity, choices minted by NextStep, anything the engine produced and the engine can throw away. Compost only touches runtime.</p>
 
     <h2>Salt: writing rules</h2>
@@ -8735,7 +8735,8 @@ function mintConceptAtPoint(p, type) {
     state.graph.addContext("IS", type, "Concept", "rule");
     toast(`Created new type <code>${esc(type)}</code> (rule layer)`, "info");
   }
-  const name = mintFresh(state.graph, type, state.activeLayer);
+  const paintLayer = layerForInstanceOf(type);
+  const name = mintFresh(state.graph, type, paintLayer);
   // Position the new node at the click point so it appears where the user clicked,
   // not at the random spawn point chosen by ForceLayout.sync. The layout has just
   // been synced inside addConcept's render chain, so the node entry exists.
@@ -8745,8 +8746,8 @@ function mintConceptAtPoint(p, type) {
   state.freshlyCreated.concepts.add(name);
   // IS-A edge to the type, always. Even if the type is "Concept" itself, the edge
   // is informative — it shows where the new concept sits in the type hierarchy.
-  state.graph.addContext("IS", name, type, state.activeLayer);
-  logEntry("add", `painted <code>${esc(name)}</code> · ${esc(type)} · <code>${esc(state.activeLayer)}</code>`);
+  state.graph.addContext("IS", name, type, paintLayer);
+  logEntry("add", `painted <code>${esc(name)}</code> · ${esc(type)} · <code>${esc(paintLayer)}</code>`);
   toast(`Painted <code>${esc(name)}</code> · ${esc(type)}`, "success");
   render();
 }
@@ -8766,13 +8767,13 @@ function createTripleBetween(subj, tgt, ctx) {
   } else if (!state.graph.isA(ctx, "Context")) {
     toast(`<code>${esc(ctx)}</code> exists but is not a Context`, "warn"); return;
   }
-  const added = state.graph.addContext(ctx, subj, tgt, state.activeLayer);
+  const added = state.graph.addContext(ctx, subj, tgt, "content");
   if (!added) { toast(`triple <code>${esc(subj)} ${esc(ctx)} ${esc(tgt)}</code> already exists`, "info"); return; }
   state.freshlyCreated.contexts.add(`${subj}\u0001${ctx}\u0001${tgt}`);
-  logEntry("add", `painted triple <code>${esc(subj)} ${esc(ctx)} ${esc(tgt)}</code> · <code>${esc(state.activeLayer)}</code>`);
+  logEntry("add", `painted triple <code>${esc(subj)} ${esc(ctx)} ${esc(tgt)}</code> · <code>${esc(added.layer)}</code>`);
   toast(`Painted <code>${esc(subj)} ${esc(ctx)} ${esc(tgt)}</code>`, "success");
-  // Auto-saturate when painting into content
-  if (state.activeLayer === "content") {
+  // Auto-saturate when the triple landed in content or runtime
+  if (added.layer === "content" || added.layer === "runtime") {
     const sat = fireToQuiescence();
     if (sat.fires > 0) logEntry("fired", `propagated ${sat.fires} fire${sat.fires===1?"":"s"} over ${sat.passes} pass${sat.passes===1?"":"es"} · +${sat.newC}c +${sat.newX}ctx`);
   }
@@ -8956,8 +8957,8 @@ function showEdgeRenamePopover(subject, ctxName, target) {
       state.graph._ctxKeys.add(triple.key());
       toast(`Retyped edge to existing <code>${esc(newName)}</code>`, "success");
     } else {
-      // New context concept gets created in the active authoring layer.
-      const layer = state.activeLayer || "rule";
+      // A new relation is schema.
+      const layer = "rule";
       state.graph.addConcept(newName, ["Context"], layer);
       state.graph.addContext("IS", newName, "Context", layer);
       state.graph._ctxKeys.delete(triple.key());
@@ -9663,24 +9664,34 @@ function conceptLayer(name) {
 // Returns true if a layer is visible from the perspective of the current authoring mode.
 // Rule mode: hides Content and Runtime (those are instance-level).
 // Content mode: shows all (Content and Runtime reference Rule + Engine types).
-function isLayerVisibleInMode(layer, mode = state.activeLayer) {
+function isLayerVisibleInMode(layer, mode = "content") {
   if (mode === "content") return true;
   if (mode === "rule")    return layer !== "content" && layer !== "runtime";
   return true;
 }
 
 // Concept names filtered by active mode
-function conceptNamesForCurrentLayer(mode = state.activeLayer) {
+function conceptNamesForCurrentLayer(mode = "content") {
   return [...state.graph.concepts.values()]
     .filter(c => isLayerVisibleInMode(c.layer || "rule", mode))
     .map(c => c.name);
 }
 
 // Context-type concept names filtered by active mode (relation types are typically Rule+Engine)
-function contextConceptNamesForCurrentLayer(mode = state.activeLayer) {
+function contextConceptNamesForCurrentLayer(mode = "content") {
   return contextConceptNames().filter(n => isLayerVisibleInMode(conceptLayer(n), mode));
 }
 
+// No authoring switch: the layer of a new thing follows from what it is. An
+// instance of a domain type is content; a new type, relation, pattern or rule
+// is rule; triples derive from their ends. The old state.activeLayer stays at
+// "rule" so the accent is the theme's.
+const META_TYPES = new Set(["Concept", "Context", "Pattern", "Implication"]);
+function layerForInstanceOf(type) {
+  if (!type || META_TYPES.has(type)) return "rule";
+  if (state.graph.isA(type, "Context") || state.graph.isA(type, "Implication")) return "rule";
+  return "content";
+}
 function setActiveLayer(layer) {
   if (layer !== "rule" && layer !== "content") return;
   state.activeLayer = layer;
@@ -9774,9 +9785,7 @@ function renderConcepts(root) {
   const contentConcepts = allConcepts.filter(c => (c.layer || "rule") === "content");
   const runtimeConcepts = allConcepts.filter(c => (c.layer || "rule") === "runtime");
 
-  const formHtml = state.activeLayer === "content"
-    ? renderContentAddForm()
-    : renderRuleAddForm();
+  const formHtml = renderRuleAddForm() + renderContentAddForm();
 
   const stampHtml = renderStampPanel();
 
@@ -9796,7 +9805,7 @@ function renderConcepts(root) {
         </div>
       </details>
 
-      <details class="ontology-section content-section" ${state.activeLayer === 'content' ? 'open' : ''}>
+      <details class="ontology-section content-section" open>
         <summary>
           <span class="section-label">Content</span>
           <span class="section-count">${contentConcepts.length}</span>
@@ -9831,8 +9840,8 @@ function renderConcepts(root) {
     </div>
   `;
   withPrimitivesTree(root, "concept", innerHtml);
-  if (state.activeLayer === "content") wireContentAddForm();
-  else wireRuleAddForm();
+  wireContentAddForm();
+  wireRuleAddForm();
   wireStampPanel();
   root.querySelectorAll("[data-del]").forEach(b => {
     b.addEventListener("click", () => {
@@ -9847,7 +9856,7 @@ function renderConcepts(root) {
 // ---- Content-mode "Stamp Patterns" panel ----
 function renderStampPanel() {
   const patterns = [...state.graph.patterns.values()];
-  const layer = state.activeLayer;
+  const layer = "content";
   if (patterns.length === 0) {
     return `<div class="form-card layer-${layer} stamp-empty">
       <div class="form-title">Stamp Patterns · <span class="form-layer-badge">${esc(layer)}</span></div>
@@ -10081,7 +10090,7 @@ function showStampPopover(patternName) {
   backdrop.id = "stamp-popover";
   backdrop.innerHTML = `
     <div class="modal-box" role="dialog" aria-labelledby="stamp-popover-title">
-      <div class="modal-header" id="stamp-popover-title">Name instances · <code>${esc(patternName)}</code> · into <span class="alias-type">${esc(state.activeLayer)}</span></div>
+      <div class="modal-header" id="stamp-popover-title">Name instances · <code>${esc(patternName)}</code></div>
       <div class="modal-hint">Edit any name, or leave defaults to auto-mint. Existing concepts of that name will be reused (and given the alias's type if needed).</div>
       ${depsHtml}
       <div class="modal-rows">
@@ -10274,7 +10283,7 @@ function wireContentAddForm() {
 // Concepts allowed as subject/target of a Context Instance (triple), per active mode.
 // Rule mode: Engine + Rule only.
 // Content mode: Content + Runtime (anything instance-level).
-function conceptsForInstanceTriple(mode = state.activeLayer) {
+function conceptsForInstanceTriple(mode = "content") {
   return [...state.graph.concepts.values()]
     .filter(c => {
       const layer = c.layer || "rule";
@@ -10316,7 +10325,7 @@ function renderContexts(root) {
   const engineInst  = state.graph.contexts.filter(c => (c.layer || "content") === "engine");
   const runtimeInst = state.graph.contexts.filter(c => (c.layer || "content") === "runtime");
 
-  const declareFormHtml = state.activeLayer === "rule" ? `
+  const declareFormHtml = `
       <div class="form-card layer-rule">
         <div class="form-title">Declare Context · <span class="form-layer-badge">rule</span></div>
         <div class="form-row">
@@ -10326,9 +10335,9 @@ function renderContexts(root) {
           <button class="btn primary" id="ctx-add">Add</button>
         </div>
         <div class="form-hint">creates a Concept IS-A Context · signature triples (SUBJECT/TARGET) auto-created so instances get type-checked</div>
-      </div>` : "";
+      </div>`;
 
-  const instanceFormHtml = state.activeLayer === "content" ? `
+  const instanceFormHtml = `
       <div class="form-card layer-content">
         <div class="form-title">Add Context Instance · <span class="form-layer-badge">content</span></div>
         <div class="form-row">
@@ -10341,7 +10350,7 @@ function renderContexts(root) {
           new instance tagged as <code>content</code> layer.
           Subject / target suggestions: Content instances only${instanceConceptOptions.length === 0 ? ' — none yet, create some via the Concepts tab.' : '.'}
         </div>
-      </div>` : "";
+      </div>`;
 
   const innerHtml = `
     <div class="editor-pane">
@@ -10380,7 +10389,7 @@ function renderContexts(root) {
         </div>
       </details>
 
-      <details class="ontology-section content-section" ${state.activeLayer === 'content' ? 'open' : ''}>
+      <details class="ontology-section content-section" open>
         <summary>
           <span class="section-label">Content Instances (state triples)</span>
           <span class="section-count">${contentInst.length}</span>
@@ -10473,26 +10482,13 @@ function renderContexts(root) {
       alert(`target "${tgt}" must be IS-A ${sig.target} (signature: ${ctxName} expects ${sig.subject} → ${sig.target})`);
       return;
     }
-    // Layer guards (existing)
-    if (state.activeLayer === "rule") {
-      const bad = [subj, tgt].filter(n => conceptLayer(n) === "content");
-      if (bad.length) {
-        alert(`can't reference Content concept${bad.length > 1 ? "s" : ""} ${bad.join(", ")} from a Rule triple`);
-        return;
-      }
-    } else if (state.activeLayer === "content") {
-      const bad = [subj, tgt].filter(n => conceptLayer(n) !== "content");
-      if (bad.length) {
-        alert(`Content triples must relate Content instances — ${bad.join(", ")} is not Content. Switch to Rule mode if you mean to author schema.`);
-        return;
-      }
-    }
+    let addedTriple = null;
     try {
-      state.graph.addContext(ctxName, subj, tgt, state.activeLayer);
-      logEntry("add", `<code>${esc(subj)}</code> ${esc(ctxName)} <code>${esc(tgt)}</code> · <code>${state.activeLayer}</code>`);
+      addedTriple = state.graph.addContext(ctxName, subj, tgt, "content");
+      logEntry("add", `<code>${esc(subj)}</code> ${esc(ctxName)} <code>${esc(tgt)}</code> · <code>${addedTriple ? addedTriple.layer : "exists"}</code>`);
     } catch (e) { alert("error: " + e.message); return; }
     // Saturate: the new triple may be a premise for one or more implications
-    if (state.activeLayer === "content") {
+    if (addedTriple && addedTriple.layer !== "rule" && addedTriple.layer !== "engine") {
       const sat = fireToQuiescence();
       if (sat.fires > 0) {
         logEntry("fired", `propagated ${sat.fires} fire${sat.fires === 1 ? "" : "s"} over ${sat.passes} pass${sat.passes === 1 ? "" : "es"} · +${sat.newC}c +${sat.newX}ctx`);
@@ -10512,7 +10508,7 @@ function renderContexts(root) {
     }
     const sig = getContextSignature(val);
     ciHint.classList.add("sig-active");
-    ciHint.innerHTML = `signature: <code>${esc(val)}</code> · <code class="sig-s">${esc(sig.subject)}</code> → <code class="sig-t">${esc(sig.target)}</code>${state.activeLayer === "content" ? " · subject and target must be instances IS-A those types" : ""}`;
+    ciHint.innerHTML = `signature: <code>${esc(val)}</code> · <code class="sig-s">${esc(sig.subject)}</code> → <code class="sig-t">${esc(sig.target)}</code>${" · subject and target must be IS-A those types"}`;
   }
   if (ciName) {
     ciName.addEventListener("input", refreshSigHint);
@@ -10613,10 +10609,10 @@ function instantiatePatternAsContentCore(patternName, providedNames) {
         return { ok: false, error: `name "${override}" for alias "${name}" isn't a valid identifier` };
       }
       // Reuse if exists, otherwise create; either way ensure it has the right type.
-      state.graph.addConcept(override, [type], state.activeLayer);
+      state.graph.addConcept(override, [type], layerForInstanceOf(type));
       bindings.set(name, override);
     } else {
-      bindings.set(name, mintFresh(state.graph, type, state.activeLayer));
+      bindings.set(name, mintFresh(state.graph, type, layerForInstanceOf(type)));
     }
   }
 
@@ -10632,7 +10628,7 @@ function instantiatePatternAsContentCore(patternName, providedNames) {
       logEntry("warn", `pattern <code>${esc(patternName)}</code> uses undeclared context <code>${esc(ct)}</code> — clause skipped`);
       continue;
     }
-    if (state.graph.addContext(ct, subj, tgt, state.activeLayer)) tripleCount++;
+    if (state.graph.addContext(ct, subj, tgt, "content")) tripleCount++;
   }
 
   // Tag each declared alias's bound concept with two IS-A triples:
@@ -10646,8 +10642,8 @@ function instantiatePatternAsContentCore(patternName, providedNames) {
     if (a.type.includes(":")) continue;
     const conceptName = bindings.get(a.name);
     if (!conceptName) continue;
-    if (state.graph.addContext("IS", conceptName, a.type,    state.activeLayer)) tripleCount++;
-    if (state.graph.addContext("IS", conceptName, patternName, state.activeLayer)) tripleCount++;
+    if (state.graph.addContext("IS", conceptName, a.type,    "content")) tripleCount++;
+    if (state.graph.addContext("IS", conceptName, patternName, "content")) tripleCount++;
   }
 
   return { ok: true, concepts: bindings.size, triples: tripleCount, skipped };
@@ -10708,18 +10704,18 @@ function stampPatternBatch(patternName, count, providedNames) {
   }
   const tag = count === 1 ? "stamped" : `stamped × ${count}`;
   logEntry("add",
-    `${tag} <code>${esc(patternName)}</code> → ${totalConcepts} concept${totalConcepts === 1 ? "" : "s"}, ${totalTriples} triple${totalTriples === 1 ? "" : "s"}${errored ? ` · ${errored} failed (${esc(lastError)})` : ""} · <code>${esc(state.activeLayer)}</code>`);
+    `${tag} <code>${esc(patternName)}</code> → ${totalConcepts} concept${totalConcepts === 1 ? "" : "s"}, ${totalTriples} triple${totalTriples === 1 ? "" : "s"}${errored ? ` · ${errored} failed (${esc(lastError)})` : ""}`);
   // Saturate downstream implications so the stamp is complete — but only when stamping
   // into the content layer. Stamping schema (rule layer) shouldn't auto-run implications.
   let sat = { fires: 0, newC: 0, newX: 0, passes: 0 };
-  if (state.activeLayer === "content") {
+  {
     sat = fireToQuiescence();
     if (sat.fires > 0) {
       logEntry("fired", `propagated ${sat.fires} fire${sat.fires === 1 ? "" : "s"} over ${sat.passes} pass${sat.passes === 1 ? "" : "es"} · +${sat.newC}c +${sat.newX}ctx`);
     }
   }
   // Toast: short summary including any saturation effects
-  const tParts = [`+${totalConcepts}c`, `+${totalTriples}t`, `into <code>${esc(state.activeLayer)}</code>`];
+  const tParts = [`+${totalConcepts}c`, `+${totalTriples}t`];
   if (sat.fires > 0) tParts.push(`saturated +${sat.newC}c +${sat.newX}t`);
   toast(`Stamped <code>${esc(patternName)}</code> · ${tParts.join(" · ")}`, "success");
   render();
@@ -13299,7 +13295,7 @@ function uniqueNameFor(prefix) {
 function createInstanceOf(typeName) {
   if (!state.graph.concepts.has(typeName)) return null;
   const name = uniqueNameFor(typeName + "1");
-  const layer = state.activeLayer || "rule";
+  const layer = layerForInstanceOf(typeName);
   state.graph.addConcept(name, [typeName], layer);
   state.graph.addContext("IS", name, typeName, layer);
   const parent = state.graph.concepts.get(typeName);
@@ -13317,7 +13313,7 @@ function createInstanceOf(typeName) {
 // placeholder or untyped atom.
 function createNewItem(kind, folder) {
   const name = uniqueNameFor("New" + kind.charAt(0).toUpperCase() + kind.slice(1));
-  const layer = state.activeLayer || "rule";
+  const layer = "rule";   // a new concept, relation, pattern or rule is schema; instances come from + Instance
   if (kind === "concept") {
     state.graph.addConcept(name, ["Concept"], layer);
     state.graph.addContext("IS", name, "Concept", layer);
@@ -16810,7 +16806,7 @@ function applyProject(data) {
     state.locked = new Set(data.locked || []);
     state.hiddenFolders = new Set(data.hiddenFolders || []);
     state.treeExpanded = new Set(data.treeExpanded || ["", "Core"]);
-    if (data.activeLayer) state.activeLayer = data.activeLayer;
+    state.activeLayer = "rule";
     state.treeLayer = data.treeLayer || "all";
     state.sideView = data.sideView || "tree";
     state.webs = new Map((data.webs || []).map(w => [w.name, { name: w.name, members: w.members || [], positions: w.positions || {}, physics: w.physics !== false, createdAt: w.createdAt }]));
@@ -17219,12 +17215,11 @@ const look = {
     bar.addEventListener("click", (e) => {
       const b = e.target.closest(".act-btn"); if (!b) return;
       if (b.dataset.layer) {
-        // a layer tab: the sidebar shows that layer; picking rule or content also
-        // makes it the authoring layer, since that's where you're now working.
+        // a layer tab: the sidebar shows that layer
         const l = b.dataset.layer;
         state.treeLayer = (state.treeLayer === l) ? "all" : l;
         if (document.body.dataset.mode === "pepper") setEditorMode("salt");
-        if (state.treeLayer === "rule" || state.treeLayer === "content") setActiveLayer(state.treeLayer); else render();
+        render();
         this.syncActivity();
         return;
       }

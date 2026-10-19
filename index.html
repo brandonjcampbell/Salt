@@ -4931,6 +4931,7 @@ body[data-mode="pepper"] .project-status, body[data-mode="pepper"] .docs-toggle 
     <p>Type membership lives in the artifact, not on objects. A concept is a <code>Block</code> because some <code>IS</code> triple says so. <code>isA</code> walks <code>IS</code> edges transitively; there is no separate type registry. This is what lets a rule like <code>c:Choice CHOSE o:Option → o IS Chosen</code> actually change what queries see — the type query reads the same edges the rule just wrote.</p>
 
     <h2>Layers</h2>
+    <p>Every Concept, Pattern and Implication lives in exactly one layer, and a triple lives in the highest layer of the two concepts it joins — engine &lt; rule &lt; content &lt; runtime — so an instance's <code>IS</code> edge to its type is content, and a minted Choice's <code>CHOSE</code> edge to a rule-layer option is runtime. The layer is derived, never declared: the layer tabs in the activity bar are a partition.</p>
     <p>Every Concept and Context lives in one of four layers. <code>bundle</code> is the imported schema you got for free — read-only, deleted only by un-importing the bundle as a unit. <code>rule</code> is your authored schema: predicates, types, implications you wrote yourself. <code>content</code> is the dataset — facts about the world. <code>runtime</code> is disposable: positions minted by gravity, choices minted by NextStep, anything the engine produced and the engine can throw away. Compost only touches runtime.</p>
 
     <h2>Salt: writing rules</h2>
@@ -5156,6 +5157,17 @@ class Context {
   }
   key()      { return `${this.name}|${this.subject}|${this.target}`; }
   toString() { return `(${this.subject} —${this.name}→ ${this.target})`; }
+}
+const LAYER_RANK = { engine: 0, rule: 1, content: 2, runtime: 3 };
+function highestLayerOf(graph, subject, target, fallback) {
+  let best = null;
+  for (const n of [subject, target]) {
+    const c = typeof n === "string" ? graph.concepts.get(n) : null;
+    if (!c) continue;
+    const l = c.layer || "rule";
+    if (best === null || (LAYER_RANK[l] ?? 1) > (LAYER_RANK[best] ?? 1)) best = l;
+  }
+  return best || fallback || "content";
 }
 class Pattern {
   constructor(name, body) {
@@ -5669,6 +5681,12 @@ class Graph {
     return c;
   }
   addContext(name, subject, target, layer = "content", originBundleId = null) {
+    // A triple belongs to the highest layer of the concepts it joins:
+    // engine < rule < content < runtime. A content instance's IS edge to a
+    // rule type is content; a runtime Choice's CHOSE edge to a rule option is
+    // runtime, so compost can find it. The layer argument only decides when
+    // neither end is a concept (a value-typed target, say).
+    layer = highestLayerOf(this, subject, target, layer);
     const c = new Context(name, subject, target, layer, originBundleId);
     if (this._ctxKeys.has(c.key())) return null;
     this._ctxKeys.add(c.key());

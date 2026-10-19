@@ -4733,20 +4733,76 @@ body.has-selection .summary-panel { background: var(--bg-side); border-left: 1px
 .tree-row.tree-selected { background: var(--accent-soft); }
 .primitives-tree-head { background: var(--bg-side); border-bottom: 1px solid var(--line); }
 
-/* tab strip: one VS Code-style tab naming the open view, pinned above the content */
-.tab-content::before {
-  content: attr(data-title); display: block; position: sticky; top: 0; z-index: 5;
-  height: 35px; line-height: 35px; padding: 0 14px; width: max-content; min-width: 120px;
-  background: var(--bg); color: var(--ink); font-size: 12.5px;
-  border-right: 1px solid var(--line); border-bottom: 1px solid var(--bg); box-shadow: inset 0 1px 0 var(--accent);
-}
-.tab-content { box-shadow: inset 0 35px 0 var(--bg-side), inset 0 36px 0 var(--line); }
-.tab-content.graph-active::before { position: absolute; }
-.tab-content.graph-active { padding-top: 35px; box-shadow: none; position: relative; }
-.tab-content.graph-active > * { position: relative; z-index: 1; }
+
+/* --- tab strip, item pages, roll-ups, webs ---------------------------------- */
+.tab-wrap { min-width: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.tab-strip-wrap { flex: 0 0 35px; background: var(--bg-side); border-bottom: 1px solid var(--line); overflow: hidden; }
+.tab-strip { display: flex; height: 35px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.tab-strip::-webkit-scrollbar { display: none; }
+.tab-strip .tab { display: flex; align-items: center; gap: 6px; height: 35px; padding: 0 8px 0 12px; max-width: 220px; min-width: 0; flex: 0 0 auto;
+  color: var(--ink-muted); font-size: 12.5px; font-family: var(--font-ui); letter-spacing: 0; text-transform: none; border: 0; border-right: 1px solid var(--line); border-radius: 0; background: transparent; cursor: pointer; position: relative; user-select: none; }
+.tab-strip .tab:hover { color: var(--ink); background: var(--bg-hover); }
+.tab-strip .tab.active { color: var(--ink); background: var(--bg); box-shadow: inset 0 1px 0 var(--accent); border-bottom: 1px solid var(--bg); margin-bottom: -1px; }
+.tab-strip .tab.kind-web.active { box-shadow: inset 0 1px 0 var(--layer-impl); }
+.tab-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-strip .tab.kind-item .tab-title { font-family: var(--font-mono); font-size: 12px; }
+.tab-ico { display: inline-flex; width: 14px; height: 14px; align-items: center; justify-content: center; flex: 0 0 auto; opacity: 0.8; }
+.tab-ico svg { width: 13px; height: 13px; }
+.tab-ico.web { color: var(--layer-impl); }
+.tab-ico.layer-rule { color: var(--layer-rule); } .tab-ico.layer-content { color: var(--layer-content); } .tab-ico.layer-runtime { color: var(--layer-runtime); } .tab-ico.layer-engine { color: var(--ink-muted); }
+.tab-close { width: 18px; height: 18px; border: 0; border-radius: 3px; background: transparent; color: inherit; opacity: 0; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; flex: 0 0 auto; }
+.tab-strip .tab:hover .tab-close, .tab-strip .tab.active .tab-close { opacity: 0.7; }
+.tab-close:hover { opacity: 1 !important; background: var(--bg-hover); }
+.tab-content { min-width: 0; flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0; position: relative; }
+.tab-content.graph-active { height: auto; min-height: 0; padding-bottom: 0; }
+
+/* an item opened as a tab: the summary, laid out as a page */
+.item-page { padding: 1.2rem 1.6rem 3rem; max-width: 900px; }
+.item-page .summary-in-tab { background: transparent; border: 0; }
+.item-page .summary-in-tab .summary-head { background: transparent; border-bottom: 1px solid var(--line); padding: 0 0 10px; }
+.item-page .summary-in-tab .summary-head .summary-title { font-size: 18px; }
+.item-page .summary-in-tab #summary-close { display: none; }
+.item-page .summary-in-tab .summary-body { padding: 14px 0; }
+.item-page-actions { display: flex; gap: 6px; align-items: center; padding-top: 10px; border-top: 1px solid var(--line); }
+.item-page.gone { opacity: 0.6; }
+
+/* Actors / Axioms roll-ups */
+.roll-page { padding: 1.2rem 1.6rem 3rem; max-width: 1000px; }
+.roll-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 1rem; }
+.roll-head h2 { font-size: 18px; font-weight: 600; margin: 0; }
+.roll-sub { color: var(--ink-muted); font-size: 12.5px; flex: 1 1 300px; }
+.roll-search { width: 220px; }
+.roll-group { margin-bottom: 1.2rem; }
+.roll-group h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); font-weight: 600; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
+.roll-group h3 code { text-transform: none; letter-spacing: 0; font-size: 12px; color: var(--ink); }
+.roll-count { color: var(--ink-muted); font-weight: 400; }
+.roll-rows { display: flex; flex-direction: column; gap: 2px; }
+.roll-row { display: flex; align-items: center; gap: 10px; padding: 4px 8px; border-radius: var(--radius); cursor: pointer; font-size: 12.5px; }
+.roll-row:hover { background: var(--bg-hover); }
+.roll-name { font-family: var(--font-mono); font-size: 12px; color: var(--ink); }
+.roll-arrow { color: var(--ink-muted); font-family: var(--font-mono); font-size: 11.5px; }
+.roll-types { display: flex; gap: 4px; flex-wrap: wrap; }
+.roll-types .chip { font-size: 10.5px; padding: 1px 6px; border-radius: 8px; background: var(--bg-raised); border: 1px solid var(--line); color: var(--ink-soft); }
+.roll-meta { margin-left: auto; color: var(--ink-muted); font-size: 11px; white-space: nowrap; }
+.roll-meta.layer-chip { font-size: 10px; }
+
+/* the web bar above the graph */
+.web-bar { display: flex; align-items: center; gap: 8px; padding: 5px 10px; background: color-mix(in srgb, var(--layer-impl) 10%, var(--bg-side)); border-bottom: 1px solid var(--line); font-size: 12.5px; flex: 0 0 auto; }
+.web-bar .spacer { flex: 1; }
+.web-bar-name { font-weight: 600; color: var(--layer-impl); }
+.web-bar-meta { color: var(--ink-muted); font-size: 11.5px; }
+.web-bar-toggle { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink-soft); }
+.web-bar .btn.small { padding: 2px 8px; font-size: 11.5px; }
+
+/* webs in the sidebar */
+.webs-hint { padding: 6px 12px 8px; font-size: 11.5px; color: var(--ink-muted); line-height: 1.4; border-bottom: 1px solid var(--line); }
+.webs-rows { padding: 4px 0; }
+.web-row .tree-item-icon { color: var(--layer-impl); font-size: 13px; }
+.act-btn[data-act="webs"].active, .act-btn[data-act="webs"]:hover { color: var(--layer-impl); }
+.act-btn[data-act="webs"].active::before { background: var(--layer-impl); }
 
 /* pepper mode: same tokens, the mode no longer forces its own grey */
-body[data-mode="pepper"] .summary-panel, body[data-mode="pepper"] .global-tree, body[data-mode="pepper"] #tab-content { display: none !important; }
+body[data-mode="pepper"] .summary-panel, body[data-mode="pepper"] .global-tree, body[data-mode="pepper"] #tab-wrap { display: none !important; }
 body[data-mode="pepper"] .editor-main { grid-template-columns: minmax(0, 1fr) !important; }
 body[data-mode="pepper"] #pepper-panel { grid-column: 1 / -1; }
 #shaker-openers button, #shaker-level button, .shk-head button, .shk-ledger, #shaker-settings label, .shk-msg.tool, .shk-notes, .shk-tag, .shk-block-head { font-family: var(--font-ui); }
@@ -4885,6 +4941,15 @@ body[data-mode="pepper"] .project-status, body[data-mode="pepper"] .docs-toggle 
   <button type="button" class="act-btn" data-act="graph" data-tip="Graph">
     <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.6"/><circle cx="18" cy="8" r="2.6"/><circle cx="10" cy="18" r="2.6"/><path d="M8.4 6.6l7.1 1.1M7.2 8.3l2 7.3M12.3 16.9l4.4-6.5"/></svg>
   </button>
+  <button type="button" class="act-btn" data-act="webs" data-tip="Webs · curated graph views">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3.5v5M12 15.5v5M3.5 12h5M15.5 12h5"/></svg>
+  </button>
+  <button type="button" class="act-btn" data-act="actors" data-tip="Actors · every concept, by layer">
+    <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.5c2.8 0 5 1.8 5 4.5"/></svg>
+  </button>
+  <button type="button" class="act-btn" data-act="axioms" data-tip="Axioms · implications and every triple">
+    <svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/><circle cx="19" cy="17" r="1.6"/></svg>
+  </button>
   <button type="button" class="act-btn" data-act="imports" data-tip="Imports · bundles">
     <svg viewBox="0 0 24 24"><path d="M4 9.5l8-4 8 4-8 4-8-4z"/><path d="M4 9.5v6l8 4 8-4v-6"/><path d="M12 13.5v6"/></svg>
   </button>
@@ -4955,6 +5020,10 @@ Tetris_StepDownOf:                Tetris_StepDownGen:
 
     <h2>Shaker</h2>
     <p>Shaker is the assistant: a language model briefed with this documentation and a live digest of the artifact, reachable from the <code>shaker</code> button in the header in either mode. It is a fourth role with the same two lawful ways to write that you have. When it <em>authors</em>, it is an editor user: rule- and content-layer concepts, relations, triples, patterns and implications — never runtime. When it <em>plays</em>, it is a pepper client: <code>pepper.notifyInput(choice, option)</code>, validated like any other. It never writes a <code>CHOSE</code> edge itself. Its best trick is reading: ask why a rule fired, fired twice, or never fired, and it runs the OF body and reports the bindings rather than guessing. Everything it authors is a fact in the artifact — <code>X AUTHORED_BY Shaker</code> — so <code>MATCH (n)-[:AUTHORED_BY]->(Shaker)</code> finds it, and a ledger in the drawer undoes it block by block or all at once. Four levels: <em>Off</em> (reads only), <em>Explain</em> (shows proposed edits, never applies), <em>Suggest</em> (one-tap apply), <em>Author</em> (applies as it goes, undo is one tap, and it looks on its own when a fire halts at the budget). The connection — Anthropic, any OpenAI-compatible endpoint, or local Ollama — is stored in this browser only.</p>
+
+    <h2>Tabs, Actors, Axioms, Webs</h2>
+    <p>The strip above the workspace holds real tabs. A view (Graph, Imports, Projects…) is one tab; a concept, pattern, implication or triple opens as its own tab — ⌘/ctrl-click or middle-click it in the sidebar, or press ⧉ in the side panel — showing its summary as a page. <em>Actors</em> is every concept that is a thing (not a relation, not a rule), grouped by layer; <em>Axioms</em> is what the artifact asserts: the implications, then every triple by relation. Both filter as you type and open rows as tabs.</p>
+    <p>A <em>web</em> is a curated view of the graph, Silky's idea: a named set of nodes with its own layout and physics switch, kept in the project. The Webs button swaps the sidebar for the list; <em>+ web</em> takes the graph's current selection or query result. A web opens as a tab on the graph, filtered to its members, with a bar for adding or removing the selection, pulling in neighbours, toggling physics, and saving the layout — saved positions are pinned when physics is off.</p>
 
     <h2>Projects, files, Neo4j</h2>
     <p>The artifact persists in this browser. Name the graph in <em>Save / Load</em> and it becomes a project in IndexedDB, autosaved after every change — every layer, folders, locks, loaded-bundle bookkeeping, and the Shaker transcript and ledger — so a reload puts you back exactly where you were. The header shows which project is open; <em>scratch</em> means nothing is being saved. A project also travels as a file: <em>download .salt.json</em> and <em>upload</em> round-trip it (uploading a bare ontology JSON, such as a bundle or the lean export below, merges into the current graph instead). In Chromium, <em>connect a folder</em> mirrors every project to disk as <code>name.salt.json</code> through the File System Access API and pulls in any newer files it finds there. <em>download .cypher</em> writes the artifact as a Neo4j script: <code>(:Concept)</code> nodes labelled by layer and by <code>IS</code> type, relationships typed by context name with <code>layer</code> and <code>origin</code> properties, <code>(:Pattern)</code> nodes holding bodies as JSON, and <code>(:Value)</code> nodes for value-typed targets. Shaker can save, open and download with the <code>save_project</code>, <code>open_project</code> and <code>download</code> actions.</p>
@@ -5036,7 +5105,10 @@ Tetris_StepDownOf:                Tetris_StepDownGen:
 
 <main class="editor-main">
   <aside class="global-tree" id="global-tree"></aside>
-  <section class="tab-content" id="tab-content"></section>
+  <section class="tab-wrap" id="tab-wrap">
+    <div class="tab-strip-wrap" id="tab-strip-wrap"><div class="tab-strip" id="tab-strip" role="tablist"></div></div>
+    <div class="tab-content" id="tab-content"></div>
+  </section>
   <aside class="summary-panel" id="summary-panel"></aside>
   <!--
     Pepper's workspace. Visible only when body[data-mode="pepper"]. Two-pane
@@ -7458,6 +7530,7 @@ function wireCypherBar() {
 }
 
 function isNodeVisible(name) {
+  if (state.activeWeb && !webs.has(state.activeWeb, name)) return false;
   if (state.queryVisibleSet && !state.queryVisibleSet.has(name)) return false;
   if (state.filters.hiddenNodes && state.filters.hiddenNodes.has(name)) return false;
   // Folder-level hide: if the node's folder (or any ancestor folder) is in
@@ -9355,7 +9428,12 @@ const state = {
   folderRegistry: new Set(),    // folder paths that exist even with no members (so empty folders persist)
   treeExpanded: new Set(["", "Core"]),  // folder paths currently expanded in the primitives tree sidebar; "" = root
   treeSearch: "",               // current filter string for the tree search box
-  treeLayer: "all",             // which layer the sidebar shows: all | engine | rule | content | runtime (the activity bar's layer tabs)
+  treeLayer: "all",
+  sideView: "tree",             // what the sidebar shows: "tree" (primitives) or "webs"
+  tabs: [],                     // open tabs: [{id, kind: view|item|web|actors|axioms, key}]
+  activeTabId: null,
+  webs: new Map(),              // name → {name, members, positions, physics}
+  activeWeb: null,              // the web the graph is currently showing, or null             // which layer the sidebar shows: all | engine | rule | content | runtime (the activity bar's layer tabs)
   treeKindFilter: new Set(["concept", "context", "pattern", "implication", "triple"]),  // which kinds to show in the tree; all on by default
   treeAdvanced: false,          // when true, advanced controls (kind chips) appear in the tree search area
   treeSummaries: new Set(),     // names of items whose inline summary panel is open
@@ -9519,15 +9597,22 @@ function render() {
   // GLOBAL TREE — always visible on the left across all tabs.
   const treeSlot = document.getElementById("global-tree");
   if (treeSlot) {
-    treeSlot.innerHTML = renderPrimitivesTree("concept");
-    wirePrimitivesTree(treeSlot);
+    if (state.sideView === "webs") { treeSlot.innerHTML = webs.renderSide(); webs.wireSide(treeSlot); }
+    else { treeSlot.innerHTML = renderPrimitivesTree("concept"); wirePrimitivesTree(treeSlot); }
   }
+  tabs.renderStrip(); tabs.wireStrip();
   // SUMMARY PANEL — right side, when an item is selected.
   const summarySlot = document.getElementById("summary-panel");
   if (summarySlot) {
     if (state.selectedItem) {
       summarySlot.innerHTML = renderSummaryPanel(state.selectedItem);
       wireSummaryPanel(summarySlot);
+      const head = summarySlot.querySelector(".summary-head");
+      if (head && !head.querySelector(".summary-open-tab")) {
+        const b = document.createElement("button"); b.className = "summary-close summary-open-tab"; b.title = "open as a tab"; b.textContent = "⧉";
+        b.style.right = "34px"; b.addEventListener("click", () => tabs.open("item", state.selectedItem.name));
+        head.appendChild(b);
+      }
     } else {
       summarySlot.innerHTML = "";
     }
@@ -9545,6 +9630,10 @@ function render() {
   else if (state.activeTab === "test")         renderTest(root);
   else if (state.activeTab === "stress")       renderStress(root);
   else if (state.activeTab === "io")           renderIO(root);
+  else if (state.activeTab === "item")         { const t = tabs.active(); if (t && t.kind === "item") tabs.renderItem(root, t); }
+  else if (state.activeTab === "actors")       tabs.renderActors(root);
+  else if (state.activeTab === "axioms")       tabs.renderAxioms(root);
+  if (state.activeTab === "graph" && state.activeWeb) webs.renderBar(root);
 
   // Universal: any .form-card input submits its form on Enter
   wireFormEnter(root);
@@ -13588,8 +13677,8 @@ function renderSummaryPanel(sel) {
   `;
 }
 
-function wireSummaryPanel(root) {
-  const sel = state.selectedItem;
+function wireSummaryPanel(root, selOverride) {
+  const sel = selOverride || state.selectedItem;
   if (!sel) return;
   const name = sel.name;
   const closeBtn = root.querySelector("#summary-close");
@@ -15451,9 +15540,7 @@ document.querySelectorAll(".etab").forEach(t => {
       state.editingPattern = null;
       state.patternDraft = null;
     }
-    state.activeTab = t.dataset.etab;
-    if (state.activeTab !== "graph") stopGraphAnimation();
-    render();
+    tabs.open("view", t.dataset.etab);
   });
 });
 
@@ -16660,6 +16747,11 @@ function exportProject(name) {
     treeExpanded: [...(state.treeExpanded || [])],
     activeLayer: state.activeLayer,
     treeLayer: state.treeLayer || "all",
+    sideView: state.sideView || "tree",
+    tabs: (state.tabs || []).map(t => ({ id: t.id, kind: t.kind, key: t.key })),
+    activeTabId: state.activeTabId,
+    webs: [...(state.webs || new Map()).values()],
+    activeWeb: state.activeWeb,
     autoFireEnabled: state.autoFireEnabled,
     compostEnabled: state.compostEnabled,
     bundles: state.importedBundles ? [...state.importedBundles.entries()].map(([id, b]) => ({ id, name: b.name, importedAt: b.importedAt, members: b.members, snapshot: b.snapshot })) : [],
@@ -16697,6 +16789,13 @@ function applyProject(data) {
     state.treeExpanded = new Set(data.treeExpanded || ["", "Core"]);
     if (data.activeLayer) state.activeLayer = data.activeLayer;
     state.treeLayer = data.treeLayer || "all";
+    state.sideView = data.sideView || "tree";
+    state.webs = new Map((data.webs || []).map(w => [w.name, { name: w.name, members: w.members || [], positions: w.positions || {}, physics: w.physics !== false, createdAt: w.createdAt }]));
+    state.tabs = (data.tabs || []).filter(t => t.kind !== "web" || state.webs.has(t.key));
+    state.activeTabId = state.tabs.some(t => t.id === data.activeTabId) ? data.activeTabId : null;
+    state.activeWeb = null;
+    const at = state.tabs.find(t => t.id === state.activeTabId);
+    if (at) { state.activeTab = at.kind === "view" ? at.key : at.kind === "web" ? "graph" : at.kind; if (at.kind === "web") state.activeWeb = at.key; }
     if (typeof data.autoFireEnabled === "boolean") state.autoFireEnabled = data.autoFireEnabled;
     if (typeof data.compostEnabled === "boolean") state.compostEnabled = data.compostEnabled;
     state.importedBundles = new Map((data.bundles || []).map(b => [b.id, { name: b.name, importedAt: b.importedAt, members: b.members, snapshot: b.snapshot }]));
@@ -17068,6 +17167,8 @@ const look = {
     document.querySelectorAll("#activity-bar .act-btn[data-act]").forEach(b => {
       const a = b.dataset.act;
       b.classList.toggle("active", !pepperOn && (a === tab || (a === "io" && tab === "io")));
+      if (a === "webs") b.classList.toggle("active", !pepperOn && state && state.sideView === "webs");
+      if (a === "graph") b.classList.toggle("active", !pepperOn && tab === "graph" && !state.activeWeb);
       if (a === "pepper") b.classList.toggle("pepper-on", pepperOn);
       if (a === "shaker") b.classList.toggle("active", typeof shaker !== "undefined" && shaker.open);
     });
@@ -17105,13 +17206,15 @@ const look = {
         return;
       }
       const a = b.dataset.act;
+      if (a === "webs") { if (document.body.dataset.mode === "pepper") setEditorMode("salt"); state.sideView = state.sideView === "webs" ? "tree" : "webs"; render(); this.syncActivity(); return; }
+      if (a === "actors" || a === "axioms") { if (document.body.dataset.mode === "pepper") setEditorMode("salt"); tabs.open(a, "all"); this.syncActivity(); return; }
       if (a === "pepper") { setEditorMode(document.body.dataset.mode === "pepper" ? "salt" : "pepper"); }
       else if (a === "docs") { document.getElementById("docs-toggle").click(); }
       else if (a === "shaker") { document.getElementById("shaker-toggle").click(); b.classList.remove("nudge"); }
       else if (a === "theme") { pop.classList.toggle("open"); }
       else {
         if (document.body.dataset.mode === "pepper") setEditorMode("salt");
-        const t = document.querySelector(`.etab[data-etab="${a}"]`); if (t) t.click();
+        tabs.open("view", a);
       }
       this.syncActivity();
     });
@@ -17129,6 +17232,13 @@ const look = {
     // the shaker nudge dot moves to the activity bar
     const st = document.getElementById("shaker-toggle");
     if (st) new MutationObserver(() => { const sb = bar.querySelector('[data-act="shaker"]'); if (sb) sb.classList.toggle("nudge", st.classList.contains("nudge")); }).observe(st, { attributes: true, attributeFilter: ["class"] });
+    // ⌘/ctrl-click or middle-click a tree row opens it as a tab
+    const gt = document.getElementById("global-tree");
+    if (gt) {
+      const openRow = (e) => { const r = e.target.closest(".tree-row.tree-item"); if (!r || e.target.closest("button")) return; const key = r.dataset.itemName || r.dataset.tripleKey; if (key) { e.preventDefault(); e.stopPropagation(); tabs.open("item", key); } };
+      gt.addEventListener("click", (e) => { if (e.metaKey || e.ctrlKey) openRow(e); }, true);
+      gt.addEventListener("auxclick", (e) => { if (e.button === 1) openRow(e); }, true);
+    }
     // keep the bar in step with the editor
     const _render = render;
     render = function () { const r = _render.apply(this, arguments); look.syncActivity(); return r; };
@@ -17136,6 +17246,244 @@ const look = {
     setEditorMode = function (m) { const r = _mode.apply(this, arguments); look.syncActivity(); return r; };
     if (typeof shaker !== "undefined") { const _open = shaker.setOpen.bind(shaker); shaker.setOpen = (v) => { _open(v); look.syncActivity(); }; }
     this.syncActivity();
+  },
+};
+
+// ===========================================================================
+// TABS and WEBS — open things in tabs; curate graph views as objects
+// ===========================================================================
+// Tabs: the strip above the workspace holds real tabs, as in VS Code and
+// Silky. A tab is a view (graph, concepts, imports…), an item (a concept,
+// pattern, implication or triple, shown as its summary), the Actors or
+// Axioms roll-up, or a web. Views are singletons; items open once each.
+//
+// Webs: a web is a curated graph view, Silky's idea — a named set of nodes
+// with saved positions and its own physics switch. Opening a web is opening
+// the graph filtered to its members; "save layout" pins where you left them.
+// Webs live in the project.
+
+const VIEW_TITLES = { graph: "Graph", concepts: "Concepts", contexts: "Contexts", patterns: "Patterns", implications: "Implications",
+  imports: "Imports", history: "History", io: "Projects · Save / Load", run: "Run", runtime: "Runtime", actors: "Actors", axioms: "Axioms" };
+
+const tabs = {
+  // --- model ---
+  list() { return state.tabs || (state.tabs = []); },
+  active() { return this.list().find(t => t.id === state.activeTabId) || null; },
+  idFor(kind, key) { return `${kind}:${key}`; },
+  open(kind, key, { activate = true } = {}) {
+    const id = this.idFor(kind, key);
+    let t = this.list().find(x => x.id === id);
+    if (!t) { t = { id, kind, key }; this.list().push(t); }
+    if (activate) this.activate(id);
+    return t;
+  },
+  activate(id) {
+    const t = this.list().find(x => x.id === id); if (!t) return;
+    if (state.editingPattern && state.activeTab === "patterns" && !(t.kind === "view" && t.key === "patterns")) {
+      if (typeof confirmDirty === "function" && !confirmDirty()) return;
+      state.editingPattern = null; state.patternDraft = null;
+    }
+    state.activeTabId = id;
+    if (t.kind === "view") { state.activeTab = t.key; state.activeWeb = null; }
+    else if (t.kind === "web") { state.activeTab = "graph"; webs.enter(t.key); }
+    else { state.activeTab = t.kind; state.activeWeb = null; }   // "item" | "actors" | "axioms"
+    if (state.activeTab !== "graph") stopGraphAnimation();
+    render();
+  },
+  close(id) {
+    const l = this.list(); const i = l.findIndex(x => x.id === id); if (i < 0) return;
+    l.splice(i, 1);
+    if (state.activeTabId === id) {
+      const next = l[Math.min(i, l.length - 1)];
+      if (next) this.activate(next.id); else { state.activeTabId = null; state.activeWeb = null; state.activeTab = "graph"; this.open("view", "graph"); }
+    } else render();
+  },
+  title(t) {
+    if (t.kind === "view") return VIEW_TITLES[t.key] || t.key;
+    if (t.kind === "web") return t.key;
+    if (t.kind === "actors") return "Actors";
+    if (t.kind === "axioms") return "Axioms";
+    if (t.key.includes("|")) { const [s, c, o] = t.key.split("|"); return `${s} ${c} ${o}`; }
+    return t.key;
+  },
+  icon(t) {
+    if (t.kind === "view") return "";
+    if (t.kind === "web") return `<span class="tab-ico web">◎</span>`;
+    if (t.kind === "actors") return `<span class="tab-ico">☷</span>`;
+    if (t.kind === "axioms") return `<span class="tab-ico">≔</span>`;
+    const kind = t.key.includes("|") ? "triple" : (typeof getItemKind === "function" ? getItemKind(t.key) : "concept");
+    const layer = t.key.includes("|") ? "" : itemLayerOf(t.key);
+    return `<span class="tab-ico k-${kind} layer-${layer}">${typeof TREE_ICON_SVG !== "undefined" && TREE_ICON_SVG[kind] ? TREE_ICON_SVG[kind] : "•"}</span>`;
+  },
+  // --- strip ---
+  renderStrip() {
+    const el = document.getElementById("tab-strip"); if (!el) return;
+    if (!this.list().length) this.open("view", state.activeTab || "graph", { activate: false });
+    if (!this.active()) state.activeTabId = this.idFor("view", state.activeTab || "graph");
+    el.innerHTML = this.list().map(t => `
+      <div class="tab ${t.id === state.activeTabId ? "active" : ""} kind-${t.kind}" data-tab="${esc(t.id)}" title="${esc(this.title(t))}">
+        ${this.icon(t)}<span class="tab-title">${esc(this.title(t))}</span>
+        <button type="button" class="tab-close" data-tab-close="${esc(t.id)}" aria-label="close">×</button>
+      </div>`).join("");
+    const strip = document.getElementById("tab-strip-wrap"); if (strip) strip.classList.toggle("has-tabs", this.list().length > 0);
+  },
+  wireStrip() {
+    const el = document.getElementById("tab-strip"); if (!el || el._wired) return; el._wired = true;
+    el.addEventListener("click", (e) => {
+      const c = e.target.closest("[data-tab-close]"); if (c) { e.stopPropagation(); this.close(c.dataset.tabClose); return; }
+      const t = e.target.closest("[data-tab]"); if (t) this.activate(t.dataset.tab);
+    });
+    el.addEventListener("auxclick", (e) => { const t = e.target.closest("[data-tab]"); if (t && e.button === 1) { e.preventDefault(); this.close(t.dataset.tab); } });
+    el.addEventListener("wheel", (e) => { if (e.deltaY && !e.deltaX) { el.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+  },
+  // --- item tabs: the summary, as a page ---
+  renderItem(root, t) {
+    const sel = { name: t.key, kind: t.key.includes("|") ? "triple" : getItemKind(t.key) };
+    const exists = sel.kind === "triple" ? !!state.graph.contexts.find(c => `${c.subject}|${c.name}|${c.target}` === t.key) : (state.graph.concepts.has(t.key) || state.graph.patterns.has(t.key));
+    root.innerHTML = `<div class="item-page ${exists ? "" : "gone"}"><div class="summary-panel summary-in-tab">${renderSummaryPanel(sel)}</div>
+      ${exists ? `<div class="item-page-actions"><button class="btn small" data-item-focus="${esc(t.key)}">show in graph</button><button class="btn small" data-item-select="${esc(t.key)}">pin to side panel</button>${state.webs && state.webs.size && sel.kind !== "triple" ? `<select class="tool-select" data-item-web><option value="">add to web…</option>${[...state.webs.keys()].map(w => `<option>${esc(w)}</option>`).join("")}</select>` : ""}</div>` : ""}</div>`;
+    const sp = root.querySelector(".summary-in-tab");
+    if (sp) wireSummaryPanel(sp, sel);
+    const f = root.querySelector("[data-item-focus]"); if (f) f.addEventListener("click", () => { if (sel.kind !== "triple") { focusOnNeighborhood(t.key); } tabs.open("view", "graph"); });
+    const s = root.querySelector("[data-item-select]"); if (s) s.addEventListener("click", () => { state.selectedItem = sel; render(); });
+    const w = root.querySelector("[data-item-web]"); if (w) w.addEventListener("change", () => { if (w.value) { webs.add(w.value, [t.key]); toast(`added <code>${esc(t.key)}</code> to <code>${esc(w.value)}</code>`, "success"); w.value = ""; } });
+  },
+  // --- Actors: every concept, by layer; Axioms: implications and triples by context ---
+  renderActors(root) {
+    const g = state.graph;
+    const groups = { runtime: [], content: [], rule: [], engine: [] };
+    for (const c of g.concepts.values()) {
+      if (g.isA(c.name, "Context") || g.isA(c.name, "Implication")) continue;
+      const deg = g.contextsFrom(c.name).length + g.contextsTo(c.name).length;
+      const types = g.contextsFrom(c.name, "IS").map(x => x.target).filter(t => t !== "Concept");
+      (groups[c.layer || "rule"] = groups[c.layer || "rule"] || []).push({ name: c.name, types, deg, folder: c.folder || "" });
+    }
+    const q = (state.actorsQuery || "").toLowerCase();
+    root.innerHTML = `<div class="roll-page">
+      <div class="roll-head"><h2>Actors</h2><span class="roll-sub">every concept that is a thing — not a relation, not a rule — by layer</span><input class="tool-input roll-search" id="actors-search" placeholder="filter…" value="${esc(state.actorsQuery || "")}"></div>
+      ${["runtime", "content", "rule", "engine"].map(l => {
+        const rows = (groups[l] || []).filter(r => !q || r.name.toLowerCase().includes(q) || r.types.join(" ").toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name));
+        if (!rows.length) return "";
+        return `<section class="roll-group layer-${l}"><h3><span class="tree-layer-dot layer-${l}"></span>${l} <span class="roll-count">${rows.length}</span></h3>
+          <div class="roll-rows">${rows.map(r => `<div class="roll-row" data-open-item="${esc(r.name)}"><code class="roll-name">${esc(r.name)}</code><span class="roll-types">${r.types.map(t => `<span class="chip">${esc(t)}</span>`).join("")}</span><span class="roll-meta">${r.deg} edge${r.deg === 1 ? "" : "s"}${r.folder ? " · " + esc(r.folder) : ""}</span></div>`).join("")}</div></section>`;
+      }).join("") || `<div class="form-hint">nothing yet</div>`}</div>`;
+    this.wireRoll(root, "actors-search", "actorsQuery");
+  },
+  renderAxioms(root) {
+    const g = state.graph;
+    const impls = g.conceptsOfType("Implication").map(c => ({ name: c.name, of: (g.contextsFrom(c.name, "OF")[0] || {}).target, gen: (g.contextsFrom(c.name, "GENERATES")[0] || {}).target, layer: c.layer || "rule" }));
+    const byCtx = new Map();
+    for (const x of g.contexts) { if (x.name === "OF" || x.name === "GENERATES" || x.name === "IS" || x.name === "SUBJECT" || x.name === "TARGET") continue; (byCtx.get(x.name) || byCtx.set(x.name, []).get(x.name)).push(x); }
+    const q = (state.axiomsQuery || "").toLowerCase();
+    const match = (x) => !q || `${x.subject} ${x.name} ${x.target}`.toLowerCase().includes(q);
+    root.innerHTML = `<div class="roll-page">
+      <div class="roll-head"><h2>Axioms</h2><span class="roll-sub">what the artifact asserts: the implications, then every triple by relation (typing and declaration edges left out)</span><input class="tool-input roll-search" id="axioms-search" placeholder="filter…" value="${esc(state.axiomsQuery || "")}"></div>
+      <section class="roll-group"><h3>Implications <span class="roll-count">${impls.length}</span></h3><div class="roll-rows">${impls.filter(i => !q || i.name.toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name)).map(i => `<div class="roll-row" data-open-item="${esc(i.name)}"><code class="roll-name">${esc(i.name)}</code><span class="roll-types"><span class="chip">OF ${esc(i.of || "?")}</span><span class="chip">GENERATES ${esc(i.gen || "?")}</span></span><span class="roll-meta layer-chip layer-${i.layer}">${i.layer}</span></div>`).join("") || `<div class="form-hint">none</div>`}</div></section>
+      ${[...byCtx.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([ctx, xs]) => {
+        const rows = xs.filter(match);
+        if (!rows.length) return "";
+        return `<section class="roll-group"><h3><code>${esc(ctx)}</code> <span class="roll-count">${rows.length}</span></h3><div class="roll-rows">${rows.slice(0, 400).map(x => `<div class="roll-row" data-open-item="${esc(x.subject)}|${esc(x.name)}|${esc(x.target)}"><code class="roll-name">${esc(x.subject)}</code><span class="roll-arrow">${esc(x.name)} →</span><code class="roll-name">${esc(x.target)}</code><span class="roll-meta layer-chip layer-${esc(x.layer)}">${esc(x.layer)}</span></div>`).join("")}${rows.length > 400 ? `<div class="form-hint">… ${rows.length - 400} more — filter to narrow</div>` : ""}</div></section>`;
+      }).join("")}</div>`;
+    this.wireRoll(root, "axioms-search", "axiomsQuery");
+  },
+  wireRoll(root, inputId, key) {
+    root.querySelectorAll("[data-open-item]").forEach(r => r.addEventListener("click", () => tabs.open("item", r.dataset.openItem)));
+    const inp = root.querySelector("#" + inputId);
+    if (inp) { let tmr; inp.addEventListener("input", () => { clearTimeout(tmr); tmr = setTimeout(() => { state[key] = inp.value; const pos = inp.selectionStart; render(); const again = document.getElementById(inputId); if (again) { again.focus(); again.setSelectionRange(pos, pos); } }, 180); }); }
+  },
+};
+
+const webs = {
+  all() { return state.webs || (state.webs = new Map()); },
+  get(name) { return this.all().get(name) || null; },
+  create(name, members = []) {
+    name = String(name || "").trim(); if (!name) return null;
+    if (this.all().has(name)) { toast(`web <code>${esc(name)}</code> already exists`, "warn"); return null; }
+    const w = { name, members: [...new Set(members)], positions: {}, physics: true, createdAt: Date.now() };
+    this.all().set(name, w);
+    logEntry("add", `web <code>${esc(name)}</code> · ${w.members.length} node${w.members.length === 1 ? "" : "s"}`);
+    return w;
+  },
+  add(name, names) { const w = this.get(name); if (!w) return; for (const n of names) if (!w.members.includes(n)) w.members.push(n); if (state.activeWeb === name) render(); },
+  remove(name, names) { const w = this.get(name); if (!w) return; w.members = w.members.filter(n => !names.includes(n)); if (state.activeWeb === name) render(); },
+  rename(from, to) { to = String(to || "").trim(); const w = this.get(from); if (!w || !to || this.all().has(to)) return false; this.all().delete(from); w.name = to; this.all().set(to, w);
+    const t = tabs.list().find(x => x.id === tabs.idFor("web", from)); if (t) { t.id = tabs.idFor("web", to); t.key = to; if (state.activeWeb === from) { state.activeWeb = to; state.activeTabId = t.id; } } render(); return true; },
+  delete(name) { this.all().delete(name); const t = tabs.list().find(x => x.id === tabs.idFor("web", name)); if (t) tabs.close(t.id); else render(); },
+  duplicate(name, to) { const w = this.get(name); if (!w) return null; const c = this.create(to || name + " copy", w.members); if (c) { c.positions = JSON.parse(JSON.stringify(w.positions)); c.physics = w.physics; } return c; },
+  // Make a web the graph's lens: load its saved positions (pinned when physics is off).
+  enter(name) {
+    const w = this.get(name); if (!w) { state.activeWeb = null; return; }
+    state.activeWeb = name;
+    state.queryVisibleSet = null; state.graphQuery = "";
+    if (state.layout && state.graph) {
+      state.layout.sync(state.graph);
+      for (const n of w.members) {
+        const node = state.layout.nodes.get(n); const p = w.positions[n];
+        if (node && p) { node.x = p.x; node.y = p.y; node.vx = 0; node.vy = 0; }
+        if (node) node.pinned = !w.physics && !!p;
+      }
+    }
+  },
+  saveLayout(name) {
+    const w = this.get(name); if (!w || !state.layout) return;
+    for (const n of w.members) { const node = state.layout.nodes.get(n); if (node) w.positions[n] = { x: Math.round(node.x), y: Math.round(node.y) }; }
+    toast(`layout saved for <code>${esc(name)}</code>`, "success");
+    this.enter(name);
+    render();
+  },
+  setPhysics(name, on) { const w = this.get(name); if (!w) return; w.physics = !!on; this.enter(name); render(); },
+  // Membership for the graph's visibility test.
+  has(name, n) { const w = this.get(name); return !!w && w.members.includes(n); },
+  // The web bar above the graph.
+  renderBar(root) {
+    const w = this.get(state.activeWeb); if (!w) return;
+    const selN = state.graphSelection ? state.graphSelection.size : 0;
+    root.insertAdjacentHTML("afterbegin", `<div class="web-bar">
+      <span class="web-bar-name">◎ ${esc(w.name)}</span><span class="web-bar-meta">${w.members.length} node${w.members.length === 1 ? "" : "s"} · ${Object.keys(w.positions).length} placed</span>
+      <span class="spacer"></span>
+      <button class="btn small" id="web-add-sel" ${selN ? "" : "disabled"} title="add the selected nodes to this web">+ selected${selN ? ` (${selN})` : ""}</button>
+      <button class="btn small" id="web-remove-sel" ${selN ? "" : "disabled"} title="remove the selected nodes from this web">− selected</button>
+      <button class="btn small" id="web-neighbors" title="add every neighbour of the current members">+ neighbours</button>
+      <label class="web-bar-toggle"><input type="checkbox" id="web-physics" ${w.physics ? "checked" : ""}> physics</label>
+      <button class="btn small primary" id="web-save-layout" title="remember where the nodes are">save layout</button>
+    </div>`);
+    const q = (id) => root.querySelector("#" + id);
+    q("web-add-sel").addEventListener("click", () => this.add(w.name, [...state.graphSelection]));
+    q("web-remove-sel").addEventListener("click", () => this.remove(w.name, [...state.graphSelection]));
+    q("web-neighbors").addEventListener("click", () => { const add = new Set(); for (const m of w.members) for (const n of getNeighbors(m)) add.add(n); this.add(w.name, [...add]); });
+    q("web-physics").addEventListener("change", (e) => this.setPhysics(w.name, e.target.checked));
+    q("web-save-layout").addEventListener("click", () => this.saveLayout(w.name));
+  },
+  // The Webs list in the sidebar.
+  renderSide() {
+    const list = [...this.all().values()].sort((a, b) => a.name.localeCompare(b.name));
+    const selN = state.graphSelection ? state.graphSelection.size : 0;
+    const vis = state.queryVisibleSet ? state.queryVisibleSet.size : 0;
+    return `<aside class="primitives-tree webs-side">
+      <div class="primitives-tree-head"><span class="primitives-tree-title">Webs <span class="tree-layer-count">${list.length}</span></span>
+        <div class="primitives-tree-head-actions"><button class="btn small tree-head-btn" id="web-new" title="a new web${selN ? ` from the ${selN} selected nodes` : vis ? ` from the ${vis} nodes the query shows` : ", empty"}">+ web</button></div></div>
+      <div class="webs-hint">A web is a curated view of the graph: a named set of nodes with its own layout. New webs take the graph's current selection${vis ? " or query result" : ""}.</div>
+      <div class="webs-rows">${list.map(w => `
+        <div class="tree-row tree-item web-row ${state.activeWeb === w.name ? "tree-selected" : ""}" data-web="${esc(w.name)}">
+          <span class="tree-item-icon">◎</span><span class="tree-item-name" title="double-click to rename">${esc(w.name)}</span>
+          <span class="tree-item-layer">${w.members.length}</span>
+          <span class="tree-item-controls"><button class="tree-mini-btn" data-web-dup="${esc(w.name)}" title="duplicate">⧉</button><button class="tree-mini-btn" data-web-del="${esc(w.name)}" title="delete">⌫</button></span>
+        </div>`).join("") || `<div class="folders-empty">no webs yet — select nodes in the graph, or run a query, then + web</div>`}</div>
+    </aside>`;
+  },
+  wireSide(slot) {
+    const nw = slot.querySelector("#web-new");
+    if (nw) nw.addEventListener("click", () => {
+      const name = prompt("web name"); if (!name) return;
+      const seed = state.graphSelection && state.graphSelection.size ? [...state.graphSelection] : state.queryVisibleSet ? [...state.queryVisibleSet] : [];
+      const w = this.create(name, seed); if (w) tabs.open("web", w.name);
+    });
+    slot.querySelectorAll("[data-web]").forEach(r => {
+      r.addEventListener("click", (e) => { if (e.target.closest("button")) return; tabs.open("web", r.dataset.web); });
+      r.addEventListener("dblclick", () => { const to = prompt("rename web", r.dataset.web); if (to) this.rename(r.dataset.web, to); });
+    });
+    slot.querySelectorAll("[data-web-dup]").forEach(b => b.addEventListener("click", () => { const to = prompt("duplicate as", b.dataset.webDup + " copy"); if (to && this.duplicate(b.dataset.webDup, to)) render(); }));
+    slot.querySelectorAll("[data-web-del]").forEach(b => b.addEventListener("click", () => { if (confirm(`Delete web "${b.dataset.webDel}"?`)) this.delete(b.dataset.webDel); }));
   },
 };
 

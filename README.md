@@ -73,6 +73,10 @@ The `shaker` button opens a drawer in either mode. Shaker is briefed with the bu
 | **Suggest** | Proposes blocks you apply with one tap. |
 | **Author** | Applies as it goes, undo is one tap, and it investigates on its own when a fire halts at the budget. |
 
+## Tabs, Actors, Axioms, Webs
+
+Views, items and roll-ups open as real tabs. **Actors** lists every concept that is a thing, by layer; **Axioms** lists the implications and every triple by relation. A **web** is a curated graph view, as in Silky — a named set of nodes with saved positions and its own physics switch, kept in the project — made from a selection or a query result and opened as a tab on the graph.
+
 ## Projects, files, Neo4j
 
 Name the graph in **Save / Load** and it becomes a project in this browser's IndexedDB, autosaved after every change (all layers, folders, bundle bookkeeping, and the Shaker transcript), so a reload puts you back where you were. Projects round-trip as `name.salt.json` files, and in Chromium a connected folder mirrors them to disk. **download .cypher** writes the artifact as a Neo4j script — concepts as labelled nodes, contexts as typed relationships, patterns as nodes with their bodies — ready for `cypher-shell`.

@@ -4774,6 +4774,25 @@ body[data-mode="pepper"] .project-status, body[data-mode="pepper"] .docs-toggle 
 #shaker-input { background: var(--bg-raised); }
 #toast-host .toast { background: var(--bg-raised); color: var(--ink); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,0.3); font-family: var(--font-ui); }
 
+/* layer tabs: the sidebar as one layer at a time */
+.primitives-tree.layer-view-engine .tree-item-layer, .primitives-tree.layer-view-rule .tree-item-layer,
+.primitives-tree.layer-view-content .tree-item-layer, .primitives-tree.layer-view-runtime .tree-item-layer { display: none; }
+.tree-layer-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.tree-layer-dot.layer-rule { background: var(--layer-rule); } .tree-layer-dot.layer-content { background: var(--layer-content); }
+.tree-layer-dot.layer-runtime { background: var(--layer-runtime); } .tree-layer-dot.layer-engine { background: var(--layer-engine); }
+.tree-layer-count { color: var(--ink-muted); font-weight: 400; margin-left: 2px; }
+.act-sep { width: 24px; height: 1px; background: var(--line); margin: 4px 0; }
+.act-btn[data-layer] svg { stroke-width: 1.5; }
+.act-btn[data-layer="rule"].active, .act-btn[data-layer="rule"]:hover { color: var(--layer-rule); }
+.act-btn[data-layer="content"].active, .act-btn[data-layer="content"]:hover { color: var(--layer-content); }
+.act-btn[data-layer="runtime"].active, .act-btn[data-layer="runtime"]:hover { color: var(--layer-runtime); }
+.act-btn[data-layer="engine"].active, .act-btn[data-layer="engine"]:hover { color: var(--ink-soft); }
+.act-btn[data-layer="rule"].active::before { background: var(--layer-rule); }
+.act-btn[data-layer="content"].active::before { background: var(--layer-content); }
+.act-btn[data-layer="runtime"].active::before { background: var(--layer-runtime); }
+.act-btn[data-layer="engine"].active::before { background: var(--ink-soft); }
+.act-btn .act-count { position: absolute; bottom: 3px; right: 4px; font-size: 9px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+
 /* graph topbar: the cypher bar keeps room; the hint yields first */
 .gtopbar-cypher.graph-cypher-bar { flex: 1 1 420px; }
 .graph-query-bar-status.hint { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -4849,6 +4868,20 @@ body[data-mode="pepper"] .project-status, body[data-mode="pepper"] .docs-toggle 
   nav is hidden by CSS and this is its face.
 -->
 <nav class="activity-bar" id="activity-bar" aria-label="views">
+  <!-- layer tabs — the sidebar one layer at a time, the way Silky's bar lists one primitive at a time -->
+  <button type="button" class="act-btn" data-layer="rule" data-tip="Rule · what can happen — the schema you write">
+    <svg viewBox="0 0 24 24"><path d="M5 6.5h14M5 12h7M5 17.5h14"/><path d="M15 9.5l3 2.5-3 2.5"/></svg><span class="act-count"></span>
+  </button>
+  <button type="button" class="act-btn" data-layer="content" data-tip="Content · what is — the facts you enter">
+    <svg viewBox="0 0 24 24"><ellipse cx="12" cy="6.5" rx="7" ry="2.8"/><path d="M5 6.5v11c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-11"/><path d="M5 12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8"/></svg><span class="act-count"></span>
+  </button>
+  <button type="button" class="act-btn" data-layer="runtime" data-tip="Runtime · what happened — derived by the engine, disposable">
+    <svg viewBox="0 0 24 24"><path d="M3.5 13h4l2.5-6 3.5 11 2.5-7 1.5 2h3"/></svg><span class="act-count"></span>
+  </button>
+  <button type="button" class="act-btn" data-layer="engine" data-tip="Engine · the editor's own vocabulary">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.3M12 18.2v2.3M3.5 12h2.3M18.2 12h2.3M6 6l1.6 1.6M16.4 16.4L18 18M6 18l1.6-1.6M16.4 7.6L18 6"/></svg><span class="act-count"></span>
+  </button>
+  <span class="act-sep"></span>
   <button type="button" class="act-btn" data-act="graph" data-tip="Graph">
     <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.6"/><circle cx="18" cy="8" r="2.6"/><circle cx="10" cy="18" r="2.6"/><path d="M8.4 6.6l7.1 1.1M7.2 8.3l2 7.3M12.3 16.9l4.4-6.5"/></svg>
   </button>
@@ -9304,6 +9337,7 @@ const state = {
   folderRegistry: new Set(),    // folder paths that exist even with no members (so empty folders persist)
   treeExpanded: new Set(["", "Core"]),  // folder paths currently expanded in the primitives tree sidebar; "" = root
   treeSearch: "",               // current filter string for the tree search box
+  treeLayer: "all",             // which layer the sidebar shows: all | engine | rule | content | runtime (the activity bar's layer tabs)
   treeKindFilter: new Set(["concept", "context", "pattern", "implication", "triple"]),  // which kinds to show in the tree; all on by default
   treeAdvanced: false,          // when true, advanced controls (kind chips) appear in the tree search area
   treeSummaries: new Set(),     // names of items whose inline summary panel is open
@@ -12765,8 +12799,12 @@ function passesKindFilter(name) {
   const kind = state.graph.patterns.has(name) ? "pattern" : getItemKind(name);
   return state.treeKindFilter.has(kind);
 }
+function passesLayerFilter(layer) {
+  const want = state.treeLayer || "all";
+  return want === "all" || (layer || "rule") === want;
+}
 function itemPassesFilters(name) {
-  return passesKindFilter(name) && matchesTreeSearch(name);
+  return passesKindFilter(name) && matchesTreeSearch(name) && passesLayerFilter(itemLayerOf(name));
 }
 function folderHasTreeMatch(node) {
   if (node.members.some(m => itemPassesFilters(m.name))) return true;
@@ -12774,7 +12812,7 @@ function folderHasTreeMatch(node) {
   // Empty registered folders (manually created by the user) should still appear
   // in the tree — otherwise creating a new folder seems to do nothing. When a
   // search query is active, gate by whether the folder's segment matches.
-  if (state.folderRegistry && state.folderRegistry.has(node.path)) {
+  if (state.folderRegistry && state.folderRegistry.has(node.path) && (state.treeLayer || "all") === "all") {
     const q = (state.treeSearch || "").trim().toLowerCase();
     if (!q) return true;
     return node.segment.toLowerCase().includes(q);
@@ -13753,6 +13791,7 @@ function renderPrimitivesTree(activeKind) {
         // with kind="triple", and the summary handles the rest.
         if (!state.treeKindFilter || !state.treeKindFilter.has("triple")) continue;
         if (!tripleMatchesSearch(m)) continue;
+        if (!passesLayerFilter(m.layer)) continue;
         const layer = m.layer || "rule";
         const isSel = state.selectedItem && state.selectedItem.name === m.name && state.selectedItem.kind === "triple";
         const tHidden = isTripleHidden(m.name);
@@ -13819,11 +13858,20 @@ function renderPrimitivesTree(activeKind) {
         || m.target.toLowerCase().includes(q);
   }
   renderNode(tree, 0);
+  const layerFilter = state.treeLayer || "all";
+  const LAYER_WORDS = { all: "Primitives", engine: "Engine", rule: "Rule", content: "Content", runtime: "Runtime" };
+  const LAYER_BLURB = { all: "every layer", engine: "the editor's own vocabulary", rule: "what can happen — the schema you write", content: "what is — the facts you enter", runtime: "what happened — derived, disposable" };
+  const layerCount = layerFilter === "all" ? "" : (() => {
+    let n = 0;
+    for (const c of state.graph.concepts.values()) if ((c.layer || "rule") === layerFilter) n++;
+    for (const p of state.graph.patterns.values()) if ((p.layer || "rule") === layerFilter) n++;
+    return n;
+  })();
 
   return `
-    <aside class="primitives-tree">
-      <div class="primitives-tree-head">
-        <span class="primitives-tree-title">Primitives</span>
+    <aside class="primitives-tree layer-view-${esc(layerFilter)}">
+      <div class="primitives-tree-head" title="${esc(LAYER_BLURB[layerFilter])}">
+        <span class="primitives-tree-title">${layerFilter === "all" ? "" : `<span class="tree-layer-dot layer-${esc(layerFilter)}"></span>`}${esc(LAYER_WORDS[layerFilter])}${layerCount !== "" ? ` <span class="tree-layer-count">${layerCount}</span>` : ""}</span>
         <div class="primitives-tree-head-actions">
           <button class="btn small tree-head-btn" id="tree-new-item-btn" title="new item at root (Folder is one of the options)" data-new-in-folder="">+ New</button>
         </div>
@@ -16593,6 +16641,7 @@ function exportProject(name) {
     hiddenFolders: [...(state.hiddenFolders || [])],
     treeExpanded: [...(state.treeExpanded || [])],
     activeLayer: state.activeLayer,
+    treeLayer: state.treeLayer || "all",
     autoFireEnabled: state.autoFireEnabled,
     compostEnabled: state.compostEnabled,
     bundles: state.importedBundles ? [...state.importedBundles.entries()].map(([id, b]) => ({ id, name: b.name, importedAt: b.importedAt, members: b.members, snapshot: b.snapshot })) : [],
@@ -16629,6 +16678,7 @@ function applyProject(data) {
     state.hiddenFolders = new Set(data.hiddenFolders || []);
     state.treeExpanded = new Set(data.treeExpanded || ["", "Core"]);
     if (data.activeLayer) state.activeLayer = data.activeLayer;
+    state.treeLayer = data.treeLayer || "all";
     if (typeof data.autoFireEnabled === "boolean") state.autoFireEnabled = data.autoFireEnabled;
     if (typeof data.compostEnabled === "boolean") state.compostEnabled = data.compostEnabled;
     state.importedBundles = new Map((data.bundles || []).map(b => [b.id, { name: b.name, importedAt: b.importedAt, members: b.members, snapshot: b.snapshot }]));
@@ -17005,6 +17055,15 @@ const look = {
     });
     const tc = document.getElementById("tab-content");
     if (tc) tc.dataset.title = this.tabTitle();
+    const counts = { engine: 0, rule: 0, content: 0, runtime: 0 };
+    if (state && state.graph) {
+      for (const c of state.graph.concepts.values()) counts[c.layer || "rule"] = (counts[c.layer || "rule"] || 0) + 1;
+      for (const p of state.graph.patterns.values()) counts[p.layer || "rule"] = (counts[p.layer || "rule"] || 0) + 1;
+    }
+    document.querySelectorAll("#activity-bar .act-btn[data-layer]").forEach(b => {
+      b.classList.toggle("active", !pepperOn && state && state.treeLayer === b.dataset.layer);
+      const n = b.querySelector(".act-count"); if (n) n.textContent = counts[b.dataset.layer] || "";
+    });
     const badge = document.getElementById("act-run-badge");
     const trun = document.getElementById("t-run");
     if (badge && trun) { badge.textContent = trun.textContent; badge.classList.toggle("on", trun.textContent !== "0"); }
@@ -17017,6 +17076,16 @@ const look = {
     if (!bar) return;
     bar.addEventListener("click", (e) => {
       const b = e.target.closest(".act-btn"); if (!b) return;
+      if (b.dataset.layer) {
+        // a layer tab: the sidebar shows that layer; picking rule or content also
+        // makes it the authoring layer, since that's where you're now working.
+        const l = b.dataset.layer;
+        state.treeLayer = (state.treeLayer === l) ? "all" : l;
+        if (document.body.dataset.mode === "pepper") setEditorMode("salt");
+        if (state.treeLayer === "rule" || state.treeLayer === "content") setActiveLayer(state.treeLayer); else render();
+        this.syncActivity();
+        return;
+      }
       const a = b.dataset.act;
       if (a === "pepper") { setEditorMode(document.body.dataset.mode === "pepper" ? "salt" : "pepper"); }
       else if (a === "docs") { document.getElementById("docs-toggle").click(); }

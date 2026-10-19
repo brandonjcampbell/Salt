@@ -4830,6 +4830,9 @@ body[data-mode="pepper"] .project-status, body[data-mode="pepper"] .docs-toggle 
 #shaker-input { background: var(--bg-raised); }
 #toast-host .toast { background: var(--bg-raised); color: var(--ink); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,0.3); font-family: var(--font-ui); }
 
+.tree-new-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); padding: 4px 8px 2px; font-weight: 600; }
+.tree-new-type { margin: 4px 8px; width: calc(100% - 16px); }
+.tree-new-recent { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 4px; }
 /* view-only (engine) rows and folders */
 .tree-view-only { font-size: 10px; opacity: 0.5; padding: 0 4px; }
 .tree-folder.view-only .tree-folder-name { font-style: italic; }
@@ -9687,6 +9690,20 @@ function contextConceptNamesForCurrentLayer(mode = "content") {
 // is rule; triples derive from their ends. The old state.activeLayer stays at
 // "rule" so the accent is the theme's.
 const META_TYPES = new Set(["Concept", "Context", "Pattern", "Implication"]);
+function isRunning() {
+  if (typeof pepper !== "undefined" && pepper.activeCartridgeId) return true;
+  for (const c of state.graph.concepts.values()) if (c.layer === "runtime") return true;
+  return false;
+}
+// What the + New button makes depends on the layer tab: schema on Rule (and
+// All), instances on Content, and instances into runtime while running.
+function newItemLayer() {
+  const l = state.treeLayer || "all";
+  if (l === "content") return "content";
+  if (l === "runtime") return isRunning() ? "runtime" : null;
+  if (l === "engine") return null;
+  return "rule";
+}
 function layerForInstanceOf(type) {
   if (!type || META_TYPES.has(type)) return "rule";
   if (state.graph.isA(type, "Context") || state.graph.isA(type, "Implication")) return "rule";
@@ -13292,10 +13309,10 @@ function uniqueNameFor(prefix) {
 // assume IS-A automatically means content. The user picks the layer via the
 // switcher / logo click before instantiating. Inherits the type's folder so
 // the new instance shows up next to its siblings in the tree.
-function createInstanceOf(typeName) {
+function createInstanceOf(typeName, layerOverride) {
   if (!state.graph.concepts.has(typeName)) return null;
   const name = uniqueNameFor(typeName + "1");
-  const layer = layerForInstanceOf(typeName);
+  const layer = layerOverride || layerForInstanceOf(typeName);
   state.graph.addConcept(name, [typeName], layer);
   state.graph.addContext("IS", name, typeName, layer);
   const parent = state.graph.concepts.get(typeName);
@@ -13998,7 +14015,7 @@ function renderPrimitivesTree(activeKind) {
       <div class="primitives-tree-head" title="${esc(LAYER_BLURB[layerFilter])}">
         <span class="primitives-tree-title">${layerFilter === "all" ? "" : `<span class="tree-layer-dot layer-${esc(layerFilter)}"></span>`}${esc(LAYER_WORDS[layerFilter])}${layerCount !== "" ? ` <span class="tree-layer-count">${layerCount}</span>` : ""}</span>
         <div class="primitives-tree-head-actions">
-          <button class="btn small tree-head-btn" id="tree-new-item-btn" title="new item at root (Folder is one of the options)" data-new-in-folder="">+ New</button>
+          ${newItemLayer() ? `<button class="btn small tree-head-btn" id="tree-new-item-btn" title="${layerFilter === "content" ? "new content instance" : layerFilter === "runtime" ? "mint into runtime (a game is running)" : "new rule-layer item (Folder is one of the options)"}" data-new-in-folder="">${layerFilter === "content" || layerFilter === "runtime" ? "+ Instance" : "+ New"}</button>` : ""}
         </div>
       </div>
       <div class="primitives-tree-search">
@@ -14017,7 +14034,7 @@ function renderPrimitivesTree(activeKind) {
       ` : ""}
       <div class="primitives-tree-rows" id="primitives-tree-rows" data-drop-root="true">
         <div class="tree-drop-root" data-drop-root-zone="true">↥ drop here to unfile</div>
-        ${rows.join("") || `<div class="folders-empty">${searching ? "no matches" : "empty — create a folder above"}</div>`}
+        ${rows.join("") || `<div class="folders-empty">${searching ? "no matches" : layerFilter === "runtime" ? "empty — runtime fills while a game runs, and composts after" : layerFilter === "content" ? "empty — + Instance makes one from a rule-layer type" : layerFilter === "engine" ? "empty" : "empty — create a folder above"}</div>`}
       </div>
     </aside>
   `;
@@ -14113,6 +14130,9 @@ function openNewItemPopover(anchorEl, folder) {
   document.querySelectorAll(".tree-new-popover").forEach(el => el.remove());
   const pop = document.createElement("div");
   pop.className = "tree-new-popover";
+  const target = newItemLayer();
+  if (target === null) return;
+  if (target === "content" || target === "runtime") { openNewInstancePopover(anchorEl, folder, target, pop); return; }
   pop.innerHTML = `
     <button class="tree-new-opt" data-new-kind="concept">${TREE_ICON_SVG.concept} <span>Concept</span></button>
     <button class="tree-new-opt" data-new-kind="context">${TREE_ICON_SVG.context} <span>Context</span></button>
@@ -14161,6 +14181,40 @@ function openNewItemPopover(anchorEl, folder) {
     };
     document.addEventListener("click", close, true);
   }, 0);
+}
+
+// The Content and Runtime tabs make instances: pick a type, get a fresh
+// instance of it in that layer, named inline.
+function openNewInstancePopover(anchorEl, folder, layer, pop) {
+  const types = [...state.graph.concepts.keys()].filter(n => isInstantiable(n) && (conceptLayer(n) === "rule" || conceptLayer(n) === "engine")).sort();
+  const recent = (state.recentInstanceTypes || []).filter(t => types.includes(t)).slice(0, 5);
+  pop.innerHTML = `
+    <div class="tree-new-title">new ${layer} instance</div>
+    <input class="tool-input tree-new-type" list="tree-new-type-list" placeholder="of type…" autocomplete="off">
+    <datalist id="tree-new-type-list">${types.map(t => `<option value="${esc(t)}">`).join("")}</datalist>
+    ${recent.length ? `<div class="tree-new-recent">${recent.map(t => `<button class="tree-new-opt" data-new-type="${esc(t)}">${TREE_ICON_SVG.concept} <span>${esc(t)}</span></button>`).join("")}</div>` : ""}
+    <div class="tree-new-hint" style="padding:4px 8px">${layer === "runtime" ? "while a game runs you can mint into runtime too — it composts like anything the engine made" : "an instance of a rule-layer type lands in content"}</div>`;
+  document.body.appendChild(pop);
+  const rect = anchorEl.getBoundingClientRect();
+  pop.style.position = "fixed"; pop.style.left = rect.left + "px"; pop.style.top = (rect.bottom + 4) + "px"; pop.style.zIndex = 2000;
+  const make = (type) => {
+    type = (type || "").trim();
+    if (!type || !state.graph.concepts.has(type)) { toast(`no type named <code>${esc(type)}</code>`, "warn"); return; }
+    pop.remove();
+    state.recentInstanceTypes = [type, ...(state.recentInstanceTypes || []).filter(t => t !== type)].slice(0, 8);
+    const name = createInstanceOf(type, layer);
+    if (!name) return;
+    const obj = state.graph.concepts.get(name);
+    if (obj && folder) obj.folder = folder;
+    if (folder) state.treeExpanded.add(folder);
+    render();
+    setTimeout(() => { const row = document.querySelector(`.tree-item[data-item-name="${cssEscape(name)}"]`); if (row) startInlineRenameItem(row, name); }, 30);
+  };
+  const inp = pop.querySelector(".tree-new-type");
+  inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); make(inp.value); } if (e.key === "Escape") pop.remove(); });
+  inp.addEventListener("change", () => { if (types.includes(inp.value)) make(inp.value); });
+  pop.querySelectorAll("[data-new-type]").forEach(b => b.addEventListener("click", (e) => { e.stopPropagation(); make(b.dataset.newType); }));
+  setTimeout(() => { inp.focus(); const close = (e) => { if (pop.contains(e.target)) return; pop.remove(); document.removeEventListener("click", close, true); }; document.addEventListener("click", close, true); }, 0);
 }
 
 function wirePrimitivesTree(root) {
@@ -14299,7 +14353,7 @@ function wirePrimitivesTree(root) {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const typeName = btn.dataset.newInstanceOf;
-      const name = createInstanceOf(typeName);
+      const name = createInstanceOf(typeName, state.treeLayer === "runtime" && isRunning() ? "runtime" : undefined);
       if (!name) return;
       // Expand the destination folder so the new instance is visible.
       const obj = state.graph.concepts.get(name);
@@ -14387,6 +14441,7 @@ function wirePrimitivesTree(root) {
   // "+ New" buttons (both the root one in the header and the per-folder ones)
   // open a small kind-picker popover. Folder is one of the options.
   root.querySelectorAll("[data-new-in-folder]").forEach(btn => {
+    if (newItemLayer() === null) { btn.style.display = "none"; return; }
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const folder = btn.dataset.newInFolder;

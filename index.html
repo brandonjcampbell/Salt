@@ -4830,6 +4830,12 @@ body[data-mode="pepper"] .project-status, body[data-mode="pepper"] .docs-toggle 
 #shaker-input { background: var(--bg-raised); }
 #toast-host .toast { background: var(--bg-raised); color: var(--ink); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,0.3); font-family: var(--font-ui); }
 
+/* view-only (engine) rows and folders */
+.tree-view-only { font-size: 10px; opacity: 0.5; padding: 0 4px; }
+.tree-folder.view-only .tree-folder-name { font-style: italic; }
+.summary-view-only { font-size: 11px; color: var(--ink-muted); padding: 4px 6px; border: 1px dashed var(--line); border-radius: var(--radius); }
+.tree-row.layer-engine .tree-item-name { color: var(--ink-soft); }
+
 /* layer tabs: the sidebar as one layer at a time */
 .primitives-tree.layer-view-engine .tree-item-layer, .primitives-tree.layer-view-rule .tree-item-layer,
 .primitives-tree.layer-view-content .tree-item-layer, .primitives-tree.layer-view-runtime .tree-item-layer { display: none; }
@@ -12913,6 +12919,18 @@ function passesLayerFilter(layer) {
 function itemPassesFilters(name) {
   return passesKindFilter(name) && matchesTreeSearch(name) && passesLayerFilter(itemLayerOf(name));
 }
+// A folder is view only when everything in it (and below it) is engine-layer
+// content — Core always, and a bundle's import folder. Nothing to edit there.
+function isFolderViewOnly(node) {
+  if (node.path === "Core") return true;
+  let any = false;
+  const walk = (n) => {
+    for (const m of n.members) { any = true; const l = m.kind === "triple" ? (m.layer || "rule") : itemLayerOf(m.name); if (l !== "engine") return false; }
+    for (const c of n.children.values()) if (walk(c) === false) return false;
+    return true;
+  };
+  return walk(node) !== false && any;
+}
 function folderHasTreeMatch(node) {
   if (node.members.some(m => itemPassesFilters(m.name))) return true;
   for (const child of node.children.values()) if (folderHasTreeMatch(child)) return true;
@@ -13615,7 +13633,7 @@ function renderSummaryPanel(sel) {
         ${kind === "concept" ? `<button class="btn small primary" id="summary-new-instance">+ Instance</button>` : ""}
         ${isPat ? `<button class="btn small primary" id="summary-stamp" title="instantiate one copy of this pattern into the graph">◆ Stamp</button>` : ""}
         <button class="btn small" id="summary-focus" title="hide every node except this one and its direct neighbors">🎯 Focus</button>
-        <button class="btn small" id="summary-toggle-lock">${locked ? "Unlock" : "Lock"}</button>
+        ${engineProtected ? `<span class="summary-view-only" title="engine content — view only">view only</span>` : `<button class="btn small" id="summary-toggle-lock">${locked ? "Unlock" : "Lock"}</button>`}
         <button class="btn small" id="summary-toggle-hide">${hidden ? "Show" : "Hide"}</button>
         ${isPat ? `<button class="btn small" id="summary-edit-pattern">Edit body</button>` : ""}
         ${kind === "implication" ? `<button class="btn small" id="summary-edit-impl">Edit mapping</button>` : ""}
@@ -13869,16 +13887,20 @@ function renderPrimitivesTree(activeKind) {
       const expanded = searching ? true : state.treeExpanded.has(node.path);
       const total = node.members.length + [...node.children.values()].reduce((s, c) => s + c.members.length, 0);
       const fHidden = isFolderHidden(node.path);
+      // Core, and any folder holding only engine-layer items, is view only:
+      // its members can be looked at, hidden and instantiated, never edited.
+      const viewOnly = isFolderViewOnly(node);
       rows.push(`
-        <div class="tree-row tree-folder ${fHidden ? "is-hidden" : ""}" data-folder-path="${esc(node.path)}" style="padding-left: ${depth * 14}px">
+        <div class="tree-row tree-folder ${fHidden ? "is-hidden" : ""} ${viewOnly ? "view-only" : ""}" data-folder-path="${esc(node.path)}" ${viewOnly ? `data-view-only="1"` : ""} style="padding-left: ${depth * 14}px">
           <span class="tree-chevron" data-toggle-folder="${esc(node.path)}">${expanded ? "▾" : "▸"}</span>
           <span class="tree-icon">${TREE_ICON_SVG.folder}</span>
-          <span class="tree-folder-name" title="double-click or right-click to rename">${esc(node.segment)}</span>
+          <span class="tree-folder-name" title="${viewOnly ? "view only" : "double-click or right-click to rename"}">${esc(node.segment)}</span>
           <span class="tree-folder-count">${total}</span>
           <span class="tree-folder-actions">
             <button class="tree-toggle-btn ${fHidden ? "on" : ""}" data-toggle-folder-hide="${esc(node.path)}" title="${fHidden ? "show" : "hide"} folder in graph">${fHidden ? "◌" : "●"}</button>
+            ${viewOnly ? `<span class="tree-view-only" title="view only — engine content">🔒</span>` : `
             <button class="tree-mini-btn tree-new-in" data-new-in-folder="${esc(node.path)}" title="new item in this folder">+</button>
-            <button class="tree-mini-btn" data-folder-delete="${esc(node.path)}" title="unfile all members">⌫</button>
+            <button class="tree-mini-btn" data-folder-delete="${esc(node.path)}" title="unfile all members">⌫</button>`}
           </span>
         </div>
       `);
@@ -13920,7 +13942,7 @@ function renderPrimitivesTree(activeKind) {
             <span class="tree-item-layer">${esc(layer)}</span>
             <span class="tree-item-controls">
               <button class="tree-toggle-btn ${tHidden ? "on" : ""}" data-toggle-triple-hide="${esc(m.name)}" title="${tHidden ? "show" : "hide"} this triple in the graph">${tHidden ? "◌" : "●"}</button>
-              <button class="tree-toggle-btn ${tLocked ? "on" : ""}" data-toggle-triple-lock="${esc(m.name)}" title="${tLocked ? "unlock" : "lock"} this triple"${engineEdge ? ` disabled` : ""}>${tLocked || engineEdge ? "🔒" : "🔓"}</button>
+              ${engineEdge ? "" : `<button class="tree-toggle-btn ${tLocked ? "on" : ""}" data-toggle-triple-lock="${esc(m.name)}" title="${tLocked ? "unlock" : "lock"} this triple">${tLocked ? "🔒" : "🔓"}</button>`}
             </span>
           </div>
         `);
@@ -13939,14 +13961,14 @@ function renderPrimitivesTree(activeKind) {
              data-item-kind="${esc(kind)}"
              data-item-layer="${esc(layer)}"
              style="padding-left: ${(depth + 1) * 14}px">
-          <span class="tree-drag-handle" title="drag to a folder to move">⋮⋮</span>
+          ${layer === "engine" ? "" : `<span class="tree-drag-handle" title="drag to a folder to move">⋮⋮</span>`}
           <span class="tree-item-icon">${itemKindIcon(kind)}</span>
-          <span class="tree-item-name" title="double-click to rename">${esc(m.name)}</span>
+          <span class="tree-item-name" title="${layer === "engine" ? "view only" : "double-click to rename"}">${esc(m.name)}</span>
           <span class="tree-item-layer">${esc(layer)}</span>
           <span class="tree-item-controls">
             ${kind === "concept" ? `<button class="tree-mini-btn tree-instance-btn" data-new-instance-of="${esc(m.name)}" title="create an instance of this concept">+</button>` : ""}
             <button class="tree-toggle-btn ${hidden ? "on" : ""}" data-toggle-hide="${esc(m.name)}" title="${hidden ? "show" : "hide"} in graph">${hidden ? "◌" : "●"}</button>
-            <button class="tree-toggle-btn ${locked ? "on" : ""}" data-toggle-lock="${esc(m.name)}" title="${locked ? "unlock" : "lock"}">${locked ? "🔒" : "🔓"}</button>
+            ${layer === "engine" ? "" : `<button class="tree-toggle-btn ${locked ? "on" : ""}" data-toggle-lock="${esc(m.name)}" title="${locked ? "unlock" : "lock"}">${locked ? "🔒" : "🔓"}</button>`}
           </span>
         </div>
       `);
@@ -14051,6 +14073,7 @@ function startInlineRenameItem(rowEl, currentName) {
 function startInlineRenameFolder(rowEl, oldPath) {
   const nameEl = rowEl.querySelector(".tree-folder-name");
   if (!nameEl) return;
+  if (rowEl.dataset.viewOnly) { toast(`<code>${esc(oldPath)}</code> is view only`, "info"); return; }
   // Only edit the last segment of the path; parent path is preserved.
   const parts = oldPath.split("/");
   const oldSegment = parts.pop();

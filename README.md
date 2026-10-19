@@ -4,7 +4,7 @@
 
 > salt writes the rules · pepper brokers the inputs · the artifact holds the truth · shaker shakes it loose
 
-Open `index.html` in a browser. That's the whole install. Or play with it live: **https://brandonjcampbell.github.io/Salt/**
+Open `index.html` in a browser. That's the whole install. The shell is VS Code's — activity bar, sidebar, tab strip — in Silky's palette, with Silky's ten themes under the palette button (and the old cream-and-magenta as *Salt classic*). Or play with it live: **https://brandonjcampbell.github.io/Salt/**
 
 ![salt editor: the primitives tree, the rule graph, and a Cypher-style match bar](docs/salt-editor.png)
 

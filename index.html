@@ -4583,6 +4583,21 @@ body[data-mode="pepper"] .shk-msg.shaker { background: rgba(255,255,255,0.06); }
 .shk-ledger .spacer { flex: 1; }
 /* toasts step aside while the drawer is open */
 body.shaker-open #toast-host { right: calc(min(420px, 92vw) + 16px); }
+
+/* project status in the header, and the Projects card in Save / Load */
+.project-status { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 0.04em; color: #6E6868; display: inline-flex; align-items: center; gap: 0.35rem; margin-right: 0.6rem; flex: 0 0 auto; }
+.project-status .pstat-name::before { content: "project · "; opacity: 0.6; }
+.project-status .pstat-name.scratch { opacity: 0.55; font-style: italic; }
+.project-status .pstat-dot { color: var(--brass); font-size: 0.6rem; }
+body[data-mode="pepper"] .project-status { color: #3a3a3a; }
+.proj-list { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.proj-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.5rem; border: 1px solid rgba(128,120,120,0.25); border-radius: 6px; font-size: 0.8rem; }
+.proj-row.current { border-color: var(--brass); }
+.proj-row-name { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+.proj-row-meta { opacity: 0.6; font-size: 0.7rem; flex: 1; }
+.proj-row-actions { display: flex; gap: 0.3rem; }
+.proj-row-actions .btn { padding: 0.15rem 0.5rem; font-size: 0.68rem; }
+.proj-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: var(--brass); text-transform: uppercase; letter-spacing: 0.05em; padding: 0.15rem 0.4rem; }
 </style>
 </head>
 <body>
@@ -4632,6 +4647,7 @@ body.shaker-open #toast-host { right: calc(min(420px, 92vw) + 16px); }
     </div>
     <button class="etab" data-etab="run">Run <span class="count" id="t-run">0</span></button>
   </nav>
+  <span id="project-status" class="project-status" aria-label="open project"></span>
   <div class="layer-switcher" role="group" aria-label="active authoring layer">
     <span class="ls-label">authoring</span>
     <button type="button" class="lswitch" data-layer="rule">Rule</button>
@@ -4681,6 +4697,9 @@ Tetris_StepDownOf:                Tetris_StepDownGen:
 
     <h2>Shaker</h2>
     <p>Shaker is the assistant: a language model briefed with this documentation and a live digest of the artifact, reachable from the <code>shaker</code> button in the header in either mode. It is a fourth role with the same two lawful ways to write that you have. When it <em>authors</em>, it is an editor user: rule- and content-layer concepts, relations, triples, patterns and implications — never runtime. When it <em>plays</em>, it is a pepper client: <code>pepper.notifyInput(choice, option)</code>, validated like any other. It never writes a <code>CHOSE</code> edge itself. Its best trick is reading: ask why a rule fired, fired twice, or never fired, and it runs the OF body and reports the bindings rather than guessing. Everything it authors is a fact in the artifact — <code>X AUTHORED_BY Shaker</code> — so <code>MATCH (n)-[:AUTHORED_BY]->(Shaker)</code> finds it, and a ledger in the drawer undoes it block by block or all at once. Four levels: <em>Off</em> (reads only), <em>Explain</em> (shows proposed edits, never applies), <em>Suggest</em> (one-tap apply), <em>Author</em> (applies as it goes, undo is one tap, and it looks on its own when a fire halts at the budget). The connection — Anthropic, any OpenAI-compatible endpoint, or local Ollama — is stored in this browser only.</p>
+
+    <h2>Projects, files, Neo4j</h2>
+    <p>The artifact persists in this browser. Name the graph in <em>Save / Load</em> and it becomes a project in IndexedDB, autosaved after every change — every layer, folders, locks, loaded-bundle bookkeeping, and the Shaker transcript and ledger — so a reload puts you back exactly where you were. The header shows which project is open; <em>scratch</em> means nothing is being saved. A project also travels as a file: <em>download .salt.json</em> and <em>upload</em> round-trip it (uploading a bare ontology JSON, such as a bundle or the lean export below, merges into the current graph instead). In Chromium, <em>connect a folder</em> mirrors every project to disk as <code>name.salt.json</code> through the File System Access API and pulls in any newer files it finds there. <em>download .cypher</em> writes the artifact as a Neo4j script: <code>(:Concept)</code> nodes labelled by layer and by <code>IS</code> type, relationships typed by context name with <code>layer</code> and <code>origin</code> properties, <code>(:Pattern)</code> nodes holding bodies as JSON, and <code>(:Value)</code> nodes for value-typed targets. Shaker can save, open and download with the <code>save_project</code>, <code>open_project</code> and <code>download</code> actions.</p>
 
     <h2>Compost</h2>
     <p>Long-running play accumulates runtime junk: superseded Positions whose successor exists, resolved Choices that already have a <code>CHOSE</code> and a <code>THEN</code> successor. Compost sweeps both, plus every triple touching the removed concept. Toggled in the pepper panel; on by default for Tetris because hundreds of steps each leave four superseded Positions behind. Compost never schedules a fire (removal doesn't trigger the auto-fire hook) so it's a pure shrink — no cascade. When composting a middle link in a THEN chain, compost rewires the chain (predecessor → successor) so a bundle-layer head doesn't lose its successor and re-fire.</p>
@@ -9166,6 +9185,7 @@ function wireFormEnter(root) {
 }
 
 function reset() {
+  if (typeof projects !== "undefined" && projects.current && !projects._loading) projects.detach();
   state.graph = buildEmpty();
   state.runner = new Runner(state.graph);
   state.editingPattern = null;
@@ -15009,6 +15029,7 @@ async function startStressRun() {
 function renderIO(root) {
   root.innerHTML = `
     <div class="editor-pane">
+      <div id="proj-card"></div>
       <div class="form-card">
         <div class="form-title">Export · current ontology as JSON</div>
         <div class="form-row">
@@ -15029,6 +15050,7 @@ function renderIO(root) {
       </div>
     </div>
   `;
+  if (typeof projects !== "undefined") projects.renderCard(document.getElementById("proj-card"));
   const ta = document.getElementById("io-textarea");
   ta.value = exportJSON(false);
   document.getElementById("export-refresh").addEventListener("click", () => {
@@ -15629,6 +15651,7 @@ Read actions (you may use these freely; their results come back to you and you c
 - {"action":"concept","name":"Position"}   a concept's types, layer, and every triple touching it (capped).
 - {"action":"pending"}   the pending Choices and their options.
 - {"action":"log",["n":40]}   the most recent engine log entries.
+- {"action":"projects"}   the projects saved in this browser, and which one is open.
 
 Write actions — only when the author asks, and only to the rule or content layers (never runtime):
 - {"action":"add_concept","name":"…",["types":["Type",…]],["layer":"rule"|"content"]}   (default: rule for schema, content for instances — say which)
@@ -15641,6 +15664,11 @@ Write actions — only when the author asks, and only to the rule or content lay
 Play actions — the pepper contract, exactly one triple per fulfilled Choice:
 - {"action":"play","choice":"Choice12","option":"Down"}   the choice must be pending and the option one of its OF options; pepper validates
 - {"action":"fire"}   run fireToQuiescence now (auto-fire usually makes this unnecessary)
+
+Project actions — the artifact persists in this browser as a named project, autosaved after every change:
+- {"action":"save_project","name":"…"}   name the current graph (or save it under a new name) and autosave from then on
+- {"action":"open_project","name":"…"}   replace the current graph with a saved project
+- {"action":"download",["format":"json"|"cypher"]}   hand the author a file: the project as .salt.json, or the artifact as a Neo4j Cypher script
 
 Rules of conduct: state is always queryable — never guess what the artifact says when you can read it. Prefer one read action and a sharp question to a long speculation. Never write a CHOSE triple yourself; play through the play action. Never add to the runtime layer. Never contradict the layer model or the good patterns from the documentation; when the author's rule violates an antipattern, say which one and why. When you author a rule, show the OF/GEN bodies in the text as well as in the block, and name the guard that keeps it from firing more than once per binding.
 
@@ -15756,8 +15784,8 @@ ${shakerDigest()}`;
 // ---------------------------------------------------------------------------
 // actions — parse, read, apply, undo
 // ---------------------------------------------------------------------------
-const SHAKER_READS  = new Set(["query", "triples", "bindings", "pattern", "concept", "pending", "log"]);
-const SHAKER_WRITES = new Set(["add_concept", "add_context", "add_triple", "add_pattern", "add_implication", "remove"]);
+const SHAKER_READS  = new Set(["query", "triples", "bindings", "pattern", "concept", "pending", "log", "projects"]);
+const SHAKER_WRITES = new Set(["add_concept", "add_context", "add_triple", "add_pattern", "add_implication", "remove", "save_project", "open_project", "download"]);
 const SHAKER_PLAYS  = new Set(["play", "fire"]);
 
 function shakerExtractActions(reply) {
@@ -15827,6 +15855,10 @@ function shakerRead(a) {
       const n = Math.min(Number(a.n) || 40, 120);
       return (state.log || []).slice(0, n).map(e => `[${e.kind}] ${String(e.html).replace(/<[^>]+>/g, "")}`).join("\n") || "log empty";
     }
+    case "projects": {
+      const known = (projects._known || []).map(p => `${p.name}${p.savedAt ? " (saved " + new Date(p.savedAt).toLocaleString() + ")" : ""}`);
+      return `open: ${projects.current || "(scratch — not saved)"}${projects.dirHandle ? ` · folder: ${projects.dirHandle.name}` : ""}\nsaved projects: ${known.length ? known.join("; ") : "none"}`;
+    }
     default: return `unknown read ${a.action}`;
   }
 }
@@ -15841,6 +15873,9 @@ function shakerDescribe(a) {
     case "add_implication": return `add implication ${a.name}: OF ${a.of} GENERATES ${a.generates}`;
     case "remove":          return `remove ${a.name}`;
     case "play":            return `play ${a.choice} ← ${a.option}`;
+    case "save_project":    return `save project ${a.name}`;
+    case "open_project":    return `open project ${a.name}`;
+    case "download":        return `download ${a.format === "cypher" ? ".cypher" : ".salt.json"}`;
     case "fire":            return "fire to quiescence";
     default:                return a.action;
   }
@@ -15944,6 +15979,20 @@ function shakerApply(a, items) {
     case "fire": {
       const r = fireToQuiescence();
       return { ok: true, note: `fired ${r.fires} · +${r.newC}c +${r.newX}t · ${r.passes} pass${r.passes === 1 ? "" : "es"}` };
+    }
+    case "save_project": {
+      if (!a.name) return { ok: false, note: "save_project needs a name" };
+      projects.create(a.name).then(ok => { if (!ok && projects.current !== a.name) projects.save(a.name); render(); });
+      return { ok: true, note: shakerDescribe(a) };
+    }
+    case "open_project": {
+      if (!a.name) return { ok: false, note: "open_project needs a name" };
+      projects.open(a.name);
+      return { ok: true, note: shakerDescribe(a) };
+    }
+    case "download": {
+      if (a.format === "cypher") projects.downloadCypher(); else projects.download();
+      return { ok: true, note: shakerDescribe(a) };
     }
     default: return { ok: false, note: `unknown action ${a.action}` };
   }
@@ -16239,8 +16288,425 @@ const shaker = {
   },
 };
 
+// ===========================================================================
+// PROJECTS — the artifact persists in this browser, and optionally on disk
+// ===========================================================================
+// Borrowed from Silky's browser backend: everything is kept in IndexedDB and
+// flushed after every change (debounced), with an optional one-way sync to a
+// real folder picked through the File System Access API (Chromium), so the
+// files land on disk too. A project is one artifact: the whole graph (every
+// layer, including runtime and engine), folders, locks, loaded-bundle
+// bookkeeping, and the Shaker transcript and ledger, so a reload puts you back
+// exactly where you were. Projects also come and go as files — a download /
+// upload of the same JSON — and go out to Neo4j as Cypher.
+
+const SALT_DB = "salt", SALT_STORE = "projects", SALT_META = "meta";
+const saltStore = {
+  _db: null,
+  open() {
+    if (this._db) return this._db;
+    this._db = new Promise((resolve) => {
+      if (typeof indexedDB === "undefined") return resolve(null);
+      const req = indexedDB.open(SALT_DB, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(SALT_STORE)) db.createObjectStore(SALT_STORE);
+        if (!db.objectStoreNames.contains(SALT_META))  db.createObjectStore(SALT_META);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => { console.warn("salt: IndexedDB unavailable — projects won't persist", req.error); resolve(null); };
+    });
+    return this._db;
+  },
+  async _tx(store, mode, fn) {
+    const db = await this.open();
+    if (!db) return undefined;
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(store, mode);
+      const req = fn(tx.objectStore(store));
+      tx.oncomplete = () => resolve(req && req.result);
+      tx.onerror = () => reject(tx.error);
+    });
+  },
+  get(name)       { return this._tx(SALT_STORE, "readonly",  s => s.get(name)); },
+  put(proj)       { return this._tx(SALT_STORE, "readwrite", s => s.put(proj, proj.name)); },
+  del(name)       { return this._tx(SALT_STORE, "readwrite", s => s.delete(name)); },
+  async list() {
+    const db = await this.open();
+    if (!db) return [];
+    return new Promise((resolve) => {
+      const out = [];
+      const req = db.transaction(SALT_STORE, "readonly").objectStore(SALT_STORE).openCursor();
+      req.onsuccess = () => { const c = req.result; if (c) { const v = c.value; out.push({ name: c.key, savedAt: v.savedAt, concepts: v.counts && v.counts.concepts, triples: v.counts && v.counts.triples }); c.continue(); } else resolve(out.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))); };
+      req.onerror = () => resolve(out);
+    });
+  },
+  metaGet(k)    { return this._tx(SALT_META, "readonly",  s => s.get(k)); },
+  metaPut(k, v) { return this._tx(SALT_META, "readwrite", s => s.put(v, k)); },
+};
+
+// --- snapshot: everything the editor would need to come back as it was ---
+function exportProject(name) {
+  const g = state.graph;
+  return {
+    salt: 1,
+    name,
+    savedAt: Date.now(),
+    counts: { concepts: g.concepts.size, triples: g.contexts.length, patterns: g.patterns.size },
+    concepts: [...g.concepts.values()].map(c => ({
+      name: c.name, types: c.types, layer: c.layer || "rule",
+      ...(c.folder ? { folder: c.folder } : {}),
+      ...(c.mapping && Object.keys(c.mapping).length ? { mapping: c.mapping } : {}),
+    })),
+    contexts: g.contexts.map(c => ({ name: c.name, subject: c.subject, target: c.target, layer: c.layer || "content", ...(c.originBundleId ? { origin: c.originBundleId } : {}) })),
+    patterns: [...g.patterns.values()].map(p => ({
+      name: p.name, body: p.body,
+      ...(p.aliases && p.aliases.length ? { aliases: p.aliases } : {}),
+      ...(p.layer ? { layer: p.layer } : {}), ...(p.folder ? { folder: p.folder } : {}),
+    })),
+    folders: [...(state.folderRegistry || [])],
+    locked: [...(state.locked || [])],
+    hiddenFolders: [...(state.hiddenFolders || [])],
+    treeExpanded: [...(state.treeExpanded || [])],
+    activeLayer: state.activeLayer,
+    autoFireEnabled: state.autoFireEnabled,
+    compostEnabled: state.compostEnabled,
+    bundles: state.importedBundles ? [...state.importedBundles.entries()].map(([id, b]) => ({ id, name: b.name, importedAt: b.importedAt, members: b.members, snapshot: b.snapshot })) : [],
+    shaker: (typeof shaker !== "undefined") ? { messages: shaker.messages, view: shaker.view.map(v => v.block ? { ...v, block: { ...v.block } } : v), ledger: shaker.ledger } : null,
+  };
+}
+
+// Replace the current graph with a project snapshot. Engine-layer std-lib
+// comes from buildEmpty(); the snapshot's copy of it is skipped by name.
+function applyProject(data) {
+  withAutoFireSuppressed(() => {
+    state.graph = buildEmpty();
+    for (const c of (data.concepts || [])) {
+      if (state.graph.concepts.has(c.name)) continue;
+      try {
+        const added = state.graph.addConcept(c.name, c.types || ["Concept"], c.layer || "rule");
+        if (added && c.folder) added.folder = c.folder;
+        if (added && c.mapping) added.mapping = { ...c.mapping };
+      } catch (e) { /* skip */ }
+    }
+    for (const p of (data.patterns || [])) {
+      try {
+        state.graph.addPattern(p.name, p.body);
+        const stored = state.graph.patterns.get(p.name);
+        if (stored) { if (p.aliases) stored.aliases = p.aliases.map(a => ({ ...a })); if (p.layer) stored.layer = p.layer; if (p.folder) stored.folder = p.folder; }
+      } catch (e) { /* skip */ }
+    }
+    for (const c of (data.contexts || [])) {
+      try { state.graph.addContext(c.name, c.subject, c.target, c.layer || "content", c.origin || null); } catch (e) { /* skip */ }
+    }
+    state.runner = new Runner(state.graph);
+    state.folderRegistry = new Set(data.folders || []);
+    state.locked = new Set(data.locked || []);
+    state.hiddenFolders = new Set(data.hiddenFolders || []);
+    state.treeExpanded = new Set(data.treeExpanded || ["", "Core"]);
+    if (data.activeLayer) state.activeLayer = data.activeLayer;
+    if (typeof data.autoFireEnabled === "boolean") state.autoFireEnabled = data.autoFireEnabled;
+    if (typeof data.compostEnabled === "boolean") state.compostEnabled = data.compostEnabled;
+    state.importedBundles = new Map((data.bundles || []).map(b => [b.id, { name: b.name, importedAt: b.importedAt, members: b.members, snapshot: b.snapshot }]));
+    state.editingPattern = null; state.patternDraft = null; state.editingImplication = null; state.implDraft = null;
+    state.layout = new ForceLayout();
+    if (typeof shaker !== "undefined" && data.shaker) {
+      shaker.messages = data.shaker.messages || [];
+      shaker.view = data.shaker.view || [];
+      shaker.ledger = data.shaker.ledger || [];
+      // blocks in the view and the ledger are the same objects when live; rejoin them
+      for (const v of shaker.view) if (v.block) { const l = shaker.ledger.find(b => b.id === v.block.id); if (l) v.block = l; }
+      shaker.renderMessages(); shaker.renderLedger();
+    }
+  });
+  document.querySelectorAll(".lswitch").forEach(b => b.classList.toggle("active", b.dataset.layer === state.activeLayer));
+  document.body.dataset.layer = state.activeLayer;
+}
+
+// --- Cypher: the artifact as a Neo4j script -------------------------------
+// Every concept is a (:Concept) node labelled by layer and by its IS types;
+// every context is a relationship typed by the context name. Value-typed
+// targets (numbers, from math-native salt) become (:Value) nodes. Patterns
+// are (:Pattern) nodes with the body as JSON; implications are concepts
+// already, and their OF / GENERATES edges point at the Pattern nodes.
+function exportCypher(name) {
+  const g = state.graph;
+  const q = (s) => JSON.stringify(String(s));
+  const bt = (s) => "`" + String(s).replace(/`/g, "``") + "`";
+  const label = (s) => bt(String(s).replace(/[^A-Za-z0-9_]/g, "_"));
+  const out = [];
+  out.push(`// salt artifact · ${name || "untitled"} · ${new Date().toISOString()}`);
+  out.push(`// ${g.concepts.size} concepts · ${g.contexts.length} triples · ${g.patterns.size} patterns`);
+  out.push(`CREATE CONSTRAINT salt_concept_name IF NOT EXISTS FOR (c:Concept) REQUIRE c.name IS UNIQUE;`);
+  out.push(`CREATE CONSTRAINT salt_pattern_name IF NOT EXISTS FOR (p:Pattern) REQUIRE p.name IS UNIQUE;`);
+  const byLayer = {};
+  for (const c of g.concepts.values()) (byLayer[c.layer || "rule"] = byLayer[c.layer || "rule"] || []).push(c);
+  for (const [layer, cs] of Object.entries(byLayer)) {
+    const rows = cs.map(c => `{name:${q(c.name)}, folder:${q(c.folder || "")}, types:${JSON.stringify(c.types || [])}}`);
+    out.push(`UNWIND [\n  ${rows.join(",\n  ")}\n] AS r\nMERGE (n:Concept {name: r.name})\nSET n.layer = ${q(layer)}, n.folder = r.folder, n:${label(layer[0].toUpperCase() + layer.slice(1))};`);
+  }
+  // IS types as labels, for the people who query by label
+  const typed = new Map();
+  for (const x of g.contexts) if (x.name === "IS" && typeof x.target === "string" && x.target !== "Concept") (typed.get(x.target) || typed.set(x.target, []).get(x.target)).push(x.subject);
+  for (const [t, subs] of typed) out.push(`MATCH (n:Concept) WHERE n.name IN ${JSON.stringify(subs)} SET n:${label(t)};`);
+  for (const p of g.patterns.values()) out.push(`MERGE (p:Pattern {name:${q(p.name)}}) SET p.body = ${q(JSON.stringify(p.body))}, p.layer = ${q(p.layer || "rule")}, p.folder = ${q(p.folder || "")};`);
+  const byRel = {};
+  for (const x of g.contexts) (byRel[x.name] = byRel[x.name] || []).push(x);
+  for (const [rel, xs] of Object.entries(byRel)) {
+    const toPattern = (rel === "OF" || rel === "GENERATES") && xs.some(x => g.patterns.has(x.target));
+    const conceptRows = [], valueRows = [], patternRows = [];
+    for (const x of xs) {
+      const row = `{s:${q(x.subject)}, t:${typeof x.target === "number" ? x.target : q(x.target)}, layer:${q(x.layer || "content")}, origin:${q(x.originBundleId || "")}}`;
+      if (typeof x.target === "number") valueRows.push(row);
+      else if (toPattern && g.patterns.has(x.target)) patternRows.push(row);
+      else conceptRows.push(row);
+    }
+    const edge = (rows, tgt) => rows.length && out.push(`UNWIND [\n  ${rows.join(",\n  ")}\n] AS r\nMATCH (s:Concept {name: r.s})\n${tgt}\nMERGE (s)-[e:${bt(rel)}]->(t)\nSET e.layer = r.layer, e.origin = r.origin;`);
+    edge(conceptRows, `MATCH (t:Concept {name: r.t})`);
+    edge(patternRows, `MATCH (t:Pattern {name: r.t})`);
+    edge(valueRows,   `MERGE (t:Value {value: r.t})`);
+  }
+  return out.join("\n\n") + "\n";
+}
+
+// --- files ----------------------------------------------------------------
+function downloadText(filename, text, type = "application/json") {
+  const blob = new Blob([text], { type });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+const safeFilename = (s) => String(s || "untitled").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "untitled";
+
+const projects = {
+  current: null,        // name of the open project, or null for an unsaved scratch graph
+  dirty: false,
+  _timer: null,
+  _saving: false,
+  dirHandle: null,      // File System Access directory, when connected
+
+  // Called after every render (the editor renders after every edit) and on
+  // every Quiescent. Debounced; a scratch graph with no project is left alone.
+  touch() {
+    if (!this.current || this._loading) return;
+    this.dirty = true;
+    if (this._timer) clearTimeout(this._timer);
+    this._timer = setTimeout(() => this.save(), 600);
+  },
+  async save(name = this.current) {
+    if (!name) return false;
+    this._timer = null;
+    const proj = exportProject(name);
+    try { await saltStore.put(proj); } catch (e) { console.warn("salt: save failed", e); return false; }
+    this.current = name; this.dirty = false;
+    await saltStore.metaPut("current", name);
+    if (this.dirHandle) await this.writeToFolder(proj).catch(e => console.warn("salt: folder sync failed", e));
+    this.renderStatus();
+    return true;
+  },
+  async open(name) {
+    const proj = await saltStore.get(name);
+    if (!proj) { toast(`no project named <code>${esc(name)}</code>`, "warn"); return false; }
+    this._loading = true;
+    try { applyProject(proj); } finally { this._loading = false; }
+    this.current = name; this.dirty = false;
+    await saltStore.metaPut("current", name);
+    logEntry("sys", `opened project <code>${esc(name)}</code> · ${proj.counts ? proj.counts.concepts + " concepts, " + proj.counts.triples + " triples" : ""}`);
+    this.renderStatus();
+    render();
+    return true;
+  },
+  // Name the current graph and start autosaving it.
+  async create(name) {
+    name = String(name || "").trim();
+    if (!name) return false;
+    if (await saltStore.get(name)) { toast(`<code>${esc(name)}</code> already exists`, "warn"); return false; }
+    this.current = name;
+    await this.save(name);
+    logEntry("sys", `project <code>${esc(name)}</code> created`);
+    return true;
+  },
+  async rename(from, to) {
+    to = String(to || "").trim();
+    if (!to || to === from) return false;
+    if (await saltStore.get(to)) { toast(`<code>${esc(to)}</code> already exists`, "warn"); return false; }
+    const proj = await saltStore.get(from);
+    if (!proj) return false;
+    proj.name = to; await saltStore.put(proj); await saltStore.del(from);
+    if (this.current === from) { this.current = to; await saltStore.metaPut("current", to); }
+    if (this.dirHandle) { await this.writeToFolder(proj).catch(() => {}); await this.removeFromFolder(from).catch(() => {}); }
+    this.renderStatus();
+    return true;
+  },
+  async remove(name) {
+    await saltStore.del(name);
+    if (this.dirHandle) await this.removeFromFolder(name).catch(() => {});
+    if (this.current === name) { this.current = null; this.dirty = false; await saltStore.metaPut("current", null); }
+    this.renderStatus();
+  },
+  async duplicate(name, to) {
+    const proj = await saltStore.get(name);
+    if (!proj) return false;
+    to = String(to || name + " copy").trim();
+    if (await saltStore.get(to)) { toast(`<code>${esc(to)}</code> already exists`, "warn"); return false; }
+    proj.name = to; proj.savedAt = Date.now();
+    await saltStore.put(proj);
+    if (this.dirHandle) await this.writeToFolder(proj).catch(() => {});
+    return true;
+  },
+  // Detach: keep the graph on screen but stop autosaving it anywhere.
+  async detach() { this.current = null; this.dirty = false; await saltStore.metaPut("current", null); this.renderStatus(); },
+
+  download(name = this.current) {
+    const proj = exportProject(name || "untitled");
+    downloadText(`${safeFilename(name)}.salt.json`, JSON.stringify(proj, null, 2));
+  },
+  downloadCypher(name = this.current) {
+    downloadText(`${safeFilename(name)}.cypher`, exportCypher(name || "untitled"), "text/plain");
+  },
+  // A .salt.json becomes a project (and opens); a bare ontology JSON (the
+  // Save/Load tab's lean export, or a bundle) merges into the current graph.
+  async uploadFile(file) {
+    const text = await file.text();
+    let data;
+    try { data = JSON.parse(text); } catch (e) { toast("that file isn't JSON", "error"); return false; }
+    if (data && data.salt === 1 && data.name) {
+      let name = data.name;
+      if (await saltStore.get(name)) { name = `${name} (${new Date().toISOString().slice(0, 10)})`; data.name = name; }
+      await saltStore.put(data);
+      await this.open(name);
+      toast(`imported project <code>${esc(name)}</code>`, "success");
+      return true;
+    }
+    withAutoFireSuppressed(() => applyOntology(data));
+    logEntry("add", `merged <code>${esc(file.name)}</code> into the graph`);
+    toast(`merged <code>${esc(file.name)}</code>`, "success");
+    render();
+    return true;
+  },
+
+  // --- optional real folder (File System Access API, Chromium) ---
+  canPickFolder() { return typeof window.showDirectoryPicker === "function"; },
+  async connectFolder() {
+    if (!this.canPickFolder()) { toast("this browser can't open folders — use download / upload instead", "info"); return false; }
+    try {
+      this.dirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+      await saltStore.metaPut("dirHandle", this.dirHandle);
+      const n = await this.importFolder();
+      for (const p of await saltStore.list()) { const proj = await saltStore.get(p.name); if (proj) await this.writeToFolder(proj).catch(() => {}); }
+      toast(`folder <code>${esc(this.dirHandle.name)}</code> connected${n ? ` · ${n} project${n === 1 ? "" : "s"} pulled in` : ""}`, "success");
+      this.renderStatus();
+      return true;
+    } catch (e) { if (e && e.name !== "AbortError") console.warn("salt: folder connect failed", e); return false; }
+  },
+  async disconnectFolder() { this.dirHandle = null; await saltStore.metaPut("dirHandle", null); this.renderStatus(); },
+  async restoreFolder() {
+    try {
+      const h = await saltStore.metaGet("dirHandle");
+      if (!h) return;
+      const perm = await h.queryPermission({ mode: "readwrite" });
+      if (perm === "granted") this.dirHandle = h;
+      else this._pendingHandle = h;   // needs a user gesture: offered as "reconnect" in the tab
+    } catch (e) { /* */ }
+  },
+  async reconnectFolder() {
+    const h = this._pendingHandle; if (!h) return this.connectFolder();
+    try { if ((await h.requestPermission({ mode: "readwrite" })) === "granted") { this.dirHandle = h; this._pendingHandle = null; this.renderStatus(); return true; } } catch (e) { /* */ }
+    return false;
+  },
+  async writeToFolder(proj) {
+    if (!this.dirHandle) return;
+    const fh = await this.dirHandle.getFileHandle(`${safeFilename(proj.name)}.salt.json`, { create: true });
+    const w = await fh.createWritable(); await w.write(JSON.stringify(proj, null, 2)); await w.close();
+  },
+  async removeFromFolder(name) { if (this.dirHandle) await this.dirHandle.removeEntry(`${safeFilename(name)}.salt.json`); },
+  // Pull every *.salt.json in the folder that is newer than (or absent from) the store.
+  async importFolder() {
+    if (!this.dirHandle) return 0;
+    let n = 0;
+    for await (const [fname, h] of this.dirHandle.entries()) {
+      if (h.kind !== "file" || !fname.endsWith(".salt.json")) continue;
+      try {
+        const data = JSON.parse(await (await h.getFile()).text());
+        if (!data || data.salt !== 1 || !data.name) continue;
+        const have = await saltStore.get(data.name);
+        if (!have || (data.savedAt || 0) > (have.savedAt || 0)) { await saltStore.put(data); n++; }
+      } catch (e) { /* skip */ }
+    }
+    return n;
+  },
+
+  async init() {
+    await this.restoreFolder();
+    const last = await saltStore.metaGet("current");
+    if (last && await saltStore.get(last)) await this.open(last);
+    pepper.subscribe("Quiescent", () => this.touch());
+    this.renderStatus();
+  },
+  renderStatus() {
+    saltStore.list().then(l => { this._known = l; }).catch(() => {});
+    const el = document.getElementById("project-status");
+    if (el) el.innerHTML = this.current ? `<span class="pstat-name" title="open project · autosaved in this browser">${esc(this.current)}</span>${this.dirty ? '<span class="pstat-dot" title="unsaved changes">●</span>' : ""}` : `<span class="pstat-name scratch" title="not saved anywhere — name it in Save / Load">scratch</span>`;
+    document.title = `${document.body.dataset.mode || "salt"} · ${this.current || "ontology editor"}`;
+  },
+  // The Projects card at the top of the Save / Load tab.
+  async renderCard(root) {
+    const list = await saltStore.list();
+    const folder = this.dirHandle ? `folder <code>${esc(this.dirHandle.name)}</code> connected · <button class="btn" id="proj-folder-off">disconnect</button>`
+      : this._pendingHandle ? `<button class="btn" id="proj-folder-on">reconnect folder <code>${esc(this._pendingHandle.name)}</code></button>`
+      : this.canPickFolder() ? `<button class="btn" id="proj-folder-on">connect a folder</button> <span class="form-hint" style="display:inline">projects also land on disk as <code>name.salt.json</code></span>`
+      : `<span class="form-hint" style="display:inline">this browser can't open folders; use download / upload</span>`;
+    root.innerHTML = `
+      <div class="form-card">
+        <div class="form-title">Projects · saved in this browser (IndexedDB), autosaved after every change</div>
+        <div class="form-row">
+          <input id="proj-name" placeholder="${this.current ? "new name…" : "name this graph to start saving it"}" autocomplete="off">
+          <button class="btn primary" id="proj-create">${this.current ? "save as new" : "save as project"}</button>
+          ${this.current ? `<button class="btn" id="proj-rename">rename</button><button class="btn" id="proj-detach">detach</button>` : ""}
+        </div>
+        <div class="form-row">
+          <button class="btn" id="proj-download">download .salt.json</button>
+          <button class="btn" id="proj-cypher">download .cypher</button>
+          <label class="btn" for="proj-upload" style="flex:0 0 auto">upload…</label><input type="file" id="proj-upload" accept=".json,application/json" style="display:none">
+        </div>
+        <div class="form-row">${folder}</div>
+        <div class="proj-list">${list.length ? list.map(p => `
+          <div class="proj-row${p.name === this.current ? " current" : ""}">
+            <span class="proj-row-name">${esc(p.name)}</span>
+            <span class="proj-row-meta">${p.concepts != null ? `${p.concepts}c · ${p.triples}t · ` : ""}${p.savedAt ? new Date(p.savedAt).toLocaleString() : ""}</span>
+            <span class="proj-row-actions">
+              ${p.name === this.current ? `<span class="proj-tag">open</span>` : `<button class="btn" data-proj-open="${esc(p.name)}">open</button>`}
+              <button class="btn" data-proj-dup="${esc(p.name)}">duplicate</button>
+              <button class="btn" data-proj-del="${esc(p.name)}">delete</button>
+            </span>
+          </div>`).join("") : `<div class="form-hint">no projects yet</div>`}</div>
+      </div>`;
+    const name = () => root.querySelector("#proj-name").value;
+    const rerender = () => render();
+    root.querySelector("#proj-create").addEventListener("click", async () => { if (await this.create(name())) rerender(); });
+    root.querySelector("#proj-name").addEventListener("keydown", async (e) => { if (e.key === "Enter" && await this.create(name())) rerender(); });
+    const rn = root.querySelector("#proj-rename"); if (rn) rn.addEventListener("click", async () => { if (await this.rename(this.current, name())) rerender(); });
+    const dt = root.querySelector("#proj-detach"); if (dt) dt.addEventListener("click", async () => { await this.detach(); rerender(); });
+    root.querySelector("#proj-download").addEventListener("click", () => this.download(this.current || name() || "untitled"));
+    root.querySelector("#proj-cypher").addEventListener("click", () => this.downloadCypher(this.current || name() || "untitled"));
+    root.querySelector("#proj-upload").addEventListener("change", async (e) => { const f = e.target.files && e.target.files[0]; if (f) { await this.uploadFile(f); rerender(); } });
+    const fon = root.querySelector("#proj-folder-on"); if (fon) fon.addEventListener("click", async () => { if (this._pendingHandle ? await this.reconnectFolder() : await this.connectFolder()) rerender(); });
+    const foff = root.querySelector("#proj-folder-off"); if (foff) foff.addEventListener("click", async () => { await this.disconnectFolder(); rerender(); });
+    root.querySelectorAll("[data-proj-open]").forEach(b => b.addEventListener("click", async () => { if (this.current && this.dirty) await this.save(); await this.open(b.dataset.projOpen); }));
+    root.querySelectorAll("[data-proj-dup]").forEach(b => b.addEventListener("click", async () => { const to = prompt("duplicate as", b.dataset.projDup + " copy"); if (to && await this.duplicate(b.dataset.projDup, to)) rerender(); }));
+    root.querySelectorAll("[data-proj-del]").forEach(b => b.addEventListener("click", async () => { if (confirm(`Delete project "${b.dataset.projDel}"? This can't be undone.`)) { await this.remove(b.dataset.projDel); rerender(); } }));
+  },
+};
+
+// Every render follows an edit, so a render is the signal to autosave.
+{
+  const _render = render;
+  render = function () { const r = _render.apply(this, arguments); projects.touch(); return r; };
+}
+
 reset();
 shaker.init();
+projects.init();
 loadBundlesFromRepo();
 </script>
 </body>

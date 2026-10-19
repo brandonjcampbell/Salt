@@ -73,6 +73,10 @@ The `shaker` button opens a drawer in either mode. Shaker is briefed with the bu
 | **Suggest** | Proposes blocks you apply with one tap. |
 | **Author** | Applies as it goes, undo is one tap, and it investigates on its own when a fire halts at the budget. |
 
+## Projects, files, Neo4j
+
+Name the graph in **Save / Load** and it becomes a project in this browser's IndexedDB, autosaved after every change (all layers, folders, bundle bookkeeping, and the Shaker transcript), so a reload puts you back where you were. Projects round-trip as `name.salt.json` files, and in Chromium a connected folder mirrors them to disk. **download .cypher** writes the artifact as a Neo4j script — concepts as labelled nodes, contexts as typed relationships, patterns as nodes with their bodies — ready for `cypher-shell`.
+
 Shaker never writes `CHOSE` itself and never touches the runtime layer. Ask it "why did that fire?" and it runs the implication's OF body and reports the bindings instead of guessing — multiplied bindings are the under-constrained-body bug, named. The connection (Anthropic, any OpenAI-compatible endpoint, or local Ollama) lives in this browser's localStorage only.
 
 ## Why

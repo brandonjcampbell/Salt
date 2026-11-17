@@ -49,6 +49,12 @@ Tetris_StepDownOf:                Tetris_StepDownGen:
 
 State is additive: nothing mutates. A moved piece is a *new* `Position` with `UPDATES` pointing at the old one; "current" means "has no successor." History is free, and `compost` sweeps superseded runtime triples when you want it to.
 
+## Foresight
+
+Because every behaviour is a rule over queryable state, salt can answer *what would follow if something happened* the same way it answers what follows from what did. `suppose(graph, supposition, bindings)` asserts a hypothetical (a pattern body or a pattern's name: `MINT` allowed, `NOT`/`NEQ` honoured, so an event that can't happen is refused) on a sandboxed clone, fires the rules to quiescence there, and returns the foreseen world with the rules that fired and every triple it gained. `foresee(graph, steps, bindings)` chains suppositions to look several events ahead; a step can be a function of the world the last one left, so the next event can depend on what was foreseen (the other side's likely reply). The live graph is never touched and pepper hears nothing; `pepper.foresee(...)` does the same against the open artifact.
+
+LioLume's foresight gift is built on it: a gifted lume supposes its next meeting or two with another lume and reads its prospects in the worlds salt resolves.
+
 ## What's in the repo
 
 ```

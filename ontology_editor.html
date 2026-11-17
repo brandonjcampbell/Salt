@@ -5326,6 +5326,16 @@ const pepper = {
     g.addContext("CHOSE", target, value, "content");
     return true;
   },
+  // Foresight: what would follow if something happened. A pure read — the
+  // supposition is resolved on a sandboxed clone (see suppose/foresee in the
+  // engine), so the artifact is untouched and no events are emitted. `steps`
+  // is one supposition or a list of them, looked at one after another.
+  foresee(steps, bindings = {}, opts = {}) {
+    const g = state && state.graph;
+    if (!g) return [];
+    const list = Array.isArray(steps) && steps.length && (typeof steps[0] === "function" || typeof steps[0] === "string" || (Array.isArray(steps[0]) && Array.isArray(steps[0][0]))) ? steps : [steps];
+    return foresee(g, list, bindings, opts);
+  },
   // Sparse pattern lookup. Subscribers (and pepper internals) can ask whether
   // a triple of a given shape exists, with `null` as wildcard for any position.
   // Not a full pattern matcher — that lives in salt — but enough for cheap
@@ -6582,6 +6592,76 @@ function runOnePlaythrough(srcGraph, maxSteps) {
     grewContexts: g.contexts.length - startContexts,
     fires,
   };
+}
+
+// ===========================================================================
+// FORESIGHT — what would follow if something happened
+// ===========================================================================
+// Every behaviour in salt is a rule over queryable state, so the consequences
+// of an event that has NOT happened can be read the same way as those of one
+// that has: suppose it on a sandboxed clone, let the rules settle there, and
+// look. The live graph is never touched, and pepper hears nothing.
+//
+// suppose(graph, supposition, bindings, opts)
+//   supposition: a pattern body (MINT allowed; NOT/NEQ are honoured, so an
+//   event that cannot happen is refused) or the name of a pattern. Variables
+//   are bound from `bindings` (numbers are fine). Returns null if refused,
+//   otherwise { graph, bindings, fired, added }: the foreseen world, the
+//   supposition's bindings (minted names included), each rule firing, and
+//   every triple the world gained ([subject, context, target]).
+//
+// foresee(graph, steps, bindings, opts)
+//   Looks several events ahead: each step is supposed on the world the one
+//   before it left. A step is a body, a pattern name, or a function
+//   (world, bindings, sofar) => body | name | [body, extraBindings] | null,
+//   which can decide the next event from the foreseen state (the other side's
+//   likely reply, say); null ends the look early. Returns one suppose() result
+//   per step taken.
+//
+// opts: { maxPasses (6), maxNewConcepts (400) } — the same fire budget as
+// saturation, applied to the clone.
+function withPepperQuiet(fn) {
+  const emit = pepper.emit;
+  pepper.emit = () => {};
+  try { return fn(); } finally { pepper.emit = emit; }
+}
+function suppose(graph, supposition, bindings = {}, opts = {}) {
+  const body = typeof supposition === "string" ? (graph.patterns.get(supposition) || {}).body : supposition;
+  if (!Array.isArray(body)) return null;
+  return withPepperQuiet(() => {
+    const g = cloneGraphForStress(graph);
+    const before = g.contexts.length;
+    const made = instantiate(g, { name: "Supposition", body }, bindings);
+    if (!made.length) return null;
+    const b = made[made.length - 1].bindings;
+    const runner = new Runner(g), fired = [];
+    const maxPasses = opts.maxPasses || 6, cap = g.concepts.size + (opts.maxNewConcepts || 400);
+    for (let i = 0; i < maxPasses; i++) {
+      const c0 = g.concepts.size, x0 = g.contexts.length;
+      const f = runner.fireAll({ maxConcepts: cap });
+      for (const x of f) if (!fired.some(y => y.impl === x.impl && y.bindings === x.bindings)) fired.push({ impl: x.impl, bindings: x.bindings });
+      if (g.concepts.size === c0 && g.contexts.length === x0) break;
+      if (g.concepts.size >= cap) break;
+    }
+    const seen = new Set(), rules = [];
+    for (const f of fired) { const k = f.impl + "\u0000" + JSON.stringify(f.bindings); if (!seen.has(k)) { seen.add(k); rules.push(f.impl); } }
+    const added = g.contexts.slice(before).map(c => [c.subject, c.name, c.target]);
+    return { graph: g, bindings: b, fired: rules, added };
+  });
+}
+function foresee(graph, steps, bindings = {}, opts = {}) {
+  const out = [];
+  let world = graph;
+  for (const step of steps) {
+    let sup = typeof step === "function" ? step(world, bindings, out) : step, extra = {};
+    if (Array.isArray(sup) && sup.length === 2 && (Array.isArray(sup[0]) || typeof sup[0] === "string") && sup[1] && typeof sup[1] === "object" && !Array.isArray(sup[1])) { extra = sup[1]; sup = sup[0]; }
+    if (!sup) break;
+    const r = suppose(world, sup, { ...bindings, ...extra }, opts);
+    if (!r) break;
+    out.push(r);
+    world = r.graph;
+  }
+  return out;
 }
 
 // Aggregate over many playthroughs.
